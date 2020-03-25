@@ -1,0 +1,22 @@
+# On OS X
+- `launchd` is used
+- service files is stored under
+	- `/Library/LaunchDaemons`
+	- OR
+	- `~/Library/LaunchAgents`
+- log files are stored under
+	- `/Library/Logs`
+	- OR
+	- `~/Library/Logs`
+- helpers
+	- `sudo launchctl stop SERVICE`
+	- `sudo launchctl unload /Library/LaunchDaemons/SERVICE.plist`
+	-
+	- `sudo launchctl load /Library/LaunchDaemons/SERVICE.plist`
+	- `sudo launchctl start SERVICE`
+	-
+	- `sudo launchctl list | grep SERVICE`
+	-
+	- `tail -f FILE`
+	- `syslog -w`
+	- `sudo lsof -i -nP | grep -e ".*BINARY-1.*" -e ".*BINARY-2.*" -e ".*BINARY-3.*"`
