@@ -1,5 +1,5 @@
-github.com/codemodify/systemkit-helpers v1.7.6 h1:C2Mdba8oC15WOkVol+p44Aw6YMcDGKOMAlW4TVAvEZg=
-github.com/codemodify/systemkit-helpers v1.7.6/go.mod h1:5jkrQySFtJYZnUnudYeuAYzbunPsAcDlQmW/kMa6rT0=
+github.com/codemodify/systemkit-helpers v1.7.7 h1:ITFCHhS6hSxqNhqcqwVfpzKG9JOEcX3E+4AO7uo1yXI=
+github.com/codemodify/systemkit-helpers v1.7.7/go.mod h1:5jkrQySFtJYZnUnudYeuAYzbunPsAcDlQmW/kMa6rT0=
 github.com/codemodify/systemkit-logging v1.7.6 h1:B43qtBemRL85bwQPsdwtspOENYB1OgHPEnZIfhB/88I=
 github.com/codemodify/systemkit-logging v1.7.6/go.mod h1:CgHyiLfps+2ALdwXfTKTShMO2shacV0+jKhjQCtnz1s=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
