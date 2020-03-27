@@ -5,8 +5,12 @@
 [![Test Status](https://github.com/danawoodman/systemservice/workflows/Test/badge.svg)](https://github.com/danawoodman/systemservice/actions)
 ![code size](https://img.shields.io/github/languages/code-size/codemodify/SystemKit?style=flat-square)
 
-Cross platform Create/Start/Stop/Delete system or user service
-	- How to use?	
+## Cross platform `Create/Start/Stop/Uninstall` system or user service
+### How to use?
+ - 	Download a sample service definiton from here and save/extract to your `~/Downloads` folder:
+
+> `github.com/codemodify/SystemKit/Service/samples/MacOS/service.sh`
+
 ```go
 package main
 
@@ -17,9 +21,9 @@ import (
 )
 
 func main() {
-	// 1. Download a sample service definiton from here: `github.com/codemodify/SystemKit/Service/samples/MacOS/service.sh` to your `~/Downloads` folder
 
-	// 2. Create service definition
+// Create service definition
+
 	usr, _ := user.Current()
 	service := Service.New(Service.Command{
 		Name:             "MY_SERVICE",
@@ -31,15 +35,38 @@ func main() {
 		WorkingDirectory: usr.HomeDir,
 	})
 
-	// 3. Instal and start
+// Instal and start
+	
 	err := service.Install(true)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-
-	// 4. DONE
-	// NOTE: if this is executed as SUDO then a system service will be created instead of user service
-
 }
 
+// Done
 ```
+
+---
+#### `INSTALL WITHOUT START  `
+```go 
+	err := service.Install(false)
+	if err != nil {
+		fmt.Println(err.Error())
+	
+```
+---
+#### `STOP SERVICE  `
+```go 
+	err := service.Stop
+	if err != nil {
+		fmt.Println(err.Error())
+```
+#### `UNINSTALL SERVICE  `
+```go 
+	err := service.Uninstall
+	if err != nil {
+		fmt.Println(err.Error())
+```
+---
+#### `IMPORTANT NOTE` 
+### If this is executed as `SUDO` then a system service will be created instead of user service
