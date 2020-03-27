@@ -5,7 +5,9 @@
 [![Test Status](https://github.com/danawoodman/systemservice/workflows/Test/badge.svg)](https://github.com/danawoodman/systemservice/actions)
 ![code size](https://img.shields.io/github/languages/code-size/codemodify/SystemKit?style=flat-square)
 
-#### Robust Cross platform Create/Start/Stop/Delete system or user service
+# Cross platform <h3> `CREATE/START/STOP/UNINSTALL` SYSTEM / USER SERVICE
+## How to use?
+ - 	Download a sample service definiton from here and save/extract to your `~/Downloads` folder:
 
 #### Supported: Linux, Raspberry Pi, FreeBSD, Mac OS, Windows, Solaris
 

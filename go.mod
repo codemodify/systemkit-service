@@ -1,6 +1,6 @@
 module github.com/codemodify/systemkit-service
 
-go 1.13
+go 1.14
 
 require (
 	github.com/codemodify/systemkit-helpers v1.7.7

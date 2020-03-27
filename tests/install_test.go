@@ -5,7 +5,7 @@ import (
 )
 
 func Test_install(t *testing.T) {
-	service := CreateRemoteitService()
+	service := CreateService()
 
 	err := service.Install(false)
 	if err != nil {
