@@ -7,9 +7,11 @@
 
 # Cross platform <h3> `CREATE/START/STOP/UNINSTALL` SYSTEM / USER SERVICE
 ## How to use?
+
+# ![](https://fonts.gstatic.com/s/i/materialicons/label_important/v4/24px.svg) MacOS ![](https://img.icons8.com/ios-filled/30/000000/mac-os.png)
  - 	Download a sample service definiton from here and save/extract to your `~/Downloads` folder:
 
-#### Supported: Linux, Raspberry Pi, FreeBSD, Mac OS, Windows, Solaris
+> `ghttps://github.com/codemodify/systemkit-service/samples/service.sh`
 
 # ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Install
 ```go

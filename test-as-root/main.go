@@ -22,7 +22,7 @@ func main() {
 		WorkingDirectory: usr.HomeDir,
 	})
 
-	err := service.Uninstall()
+	err := service.Install(true)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
