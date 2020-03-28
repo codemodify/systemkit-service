@@ -106,7 +106,7 @@ func (thisRef MacOSService) Install(start bool) error {
 
 // Start -
 func (thisRef MacOSService) Start() error {
-	// 1.
+
 	output, _ := runLaunchCtlCommand("load", "-w", thisRef.FilePath())
 	if strings.Contains(output, "No such file or directory") {
 		return ErrServiceDoesNotExist

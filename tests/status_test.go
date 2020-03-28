@@ -6,7 +6,7 @@ import (
 )
 
 func Test_status(t *testing.T) {
-	service := CreateRemoteitService()
+	service := createService()
 
 	serviceStatus := service.Status()
 	if serviceStatus.Error != nil {
