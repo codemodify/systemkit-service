@@ -1,4 +1,4 @@
-# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Service
+# ![](https://fonts.gstatic.com/s/i/materialicons/label_important/v4/24px.svg) Service
 [![GoDoc](https://godoc.org/github.com/codemodify/SystemKit?status.svg)](https://godoc.org/github.com/codemodify/SystemKit)
 [![0-License](https://img.shields.io/badge/license-0--license-brightgreen)](https://github.com/codemodify/TheFreeLicense)
 [![Go Report Card](https://goreportcard.com/badge/github.com/codemodify/SystemKit)](https://goreportcard.com/report/github.com/codemodify/SystemKit)
@@ -11,7 +11,7 @@
 # ![](https://fonts.gstatic.com/s/i/materialicons/label_important/v4/24px.svg) MacOS ![](https://img.icons8.com/ios-filled/30/000000/mac-os.png)
  - 	Download a sample service definiton from here and save/extract to your `~/Downloads` folder:
 
-> `ghttps://github.com/codemodify/systemkit-service/samples/service.sh`
+> `https://github.com/codemodify/systemkit-service/samples/service.sh`
 
 ```go
 package main
