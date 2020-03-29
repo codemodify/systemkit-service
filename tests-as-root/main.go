@@ -1,30 +1,24 @@
-// +build darwin
-
 package main
 
 import (
 	"fmt"
 
-	"github.com/codemodify/SystemKit/Service"
+	// helpersErrors "github.com/codemodify/systemkit-helpers"
+	"github.com/codemodify/systemkit-service/tests"
 )
 
 func main() {
-	usr, _ := user.Current()
+	service := tests.CreateRemoteitService()
 
-	service := Service.New(Service.Command{
-		Name:             "MY_SERVICE",
-		DisplayLabel:     "My Service",
-		Description:      "This service is a test service",
-		DocumentationURL: "",
-		Executable:       usr.HomeDir + "/Downloads/service.sh"),
-		Args:             []string{""},
-		WorkingDirectory: usr.HomeDir,
-	})
+	// err := service.Stop()
+	// if helpersErrors.Is(err, Service.ErrServiceDoesNotExist) {
+	// 	// this is a good thing
+	// } else if err != nil {
+	// 	fmt.Println(err.Error())
+	// }
 
-	//err := service.Uninstall()
-	err := service.Install(true)
+	err := service.Uninstall()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-
 }
