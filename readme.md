@@ -6,7 +6,7 @@
 ![code size](https://img.shields.io/github/languages/code-size/codemodify/SystemKit?style=flat-square)
 
 Cross platform Create/Start/Stop/Delete system or user service
-	- How to use!!!
+	- How to use?
 ```go
 package main
 
