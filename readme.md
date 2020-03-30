@@ -1,21 +1,33 @@
 # ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Service
-[![GoDoc](https://godoc.org/github.com/codemodify/SystemKit?status.svg)](https://godoc.org/github.com/codemodify/SystemKit)
+[![GoDoc](https://godoc.org/github.com/codemodify/systemkit-logging?status.svg)](https://godoc.org/github.com/codemodify/systemkit-events)
 [![0-License](https://img.shields.io/badge/license-0--license-brightgreen)](https://github.com/codemodify/TheFreeLicense)
-[![Go Report Card](https://goreportcard.com/badge/github.com/codemodify/SystemKit)](https://goreportcard.com/report/github.com/codemodify/SystemKit)
+[![Go Report Card](https://goreportcard.com/badge/github.com/codemodify/systemkit-logging)](https://goreportcard.com/report/github.com/codemodify/systemkit-logging)
 [![Test Status](https://github.com/danawoodman/systemservice/workflows/Test/badge.svg)](https://github.com/danawoodman/systemservice/actions)
 ![code size](https://img.shields.io/github/languages/code-size/codemodify/SystemKit?style=flat-square)
 
-Cross platform Create/Start/Stop/Delete system or user service
-	- How to use?
+#### Robust Cross platform Create/Start/Stop/Delete system or user service.
+#### Supported: Linux, Raspberry Pi, FreeBSD, Mac OS, Windows, Solaris
 
-# Cross platform <h3> `CREATE/START/STOP/UNINSTALL` SYSTEM / USER SERVICE
-## How to use?
+# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Install
+```go
+go get github.com/codemodify/systemkit-service
+```
 
-# ![](https://fonts.gstatic.com/s/i/materialicons/label_important/v4/24px.svg) MacOS ![](https://img.icons8.com/ios-filled/30/000000/mac-os.png)
- - 	Download a sample service definiton from here and save/extract to your `~/Downloads` folder:
+# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) API
 
-> `ghttps://github.com/codemodify/systemkit-service/samples/service.sh`
+&nbsp;										| &nbsp;
+---     									| ---
+service := Service.New()                    | Create a new system service
+service.Install(false)	                    | Install a new system service
+service.Install(true)                       | Install a new system service and start
+service.Start()                             | Start system service 
+service.Restart()                           | Restart system service 
+service.Status()                            | System service status
+service.Stop()                              | Stop system service 
+service.Uninstall()                         | Uninstall system service 
 
+
+# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Usage
 ```go
 package main
 
@@ -52,26 +64,5 @@ func main() {
 ```
 
 ---
-#### `INSTALL WITHOUT START  `
-```go 
-	err := service.Install(false)
-	if err != nil {
-		fmt.Println(err.Error())
-	
-```
----
-#### `STOP SERVICE  `
-```go 
-	err := service.Stop
-	if err != nil {
-		fmt.Println(err.Error())
-```
-#### `UNINSTALL SERVICE  `
-```go 
-	err := service.Uninstall
-	if err != nil {
-		fmt.Println(err.Error())
-```
----
-#### `IMPORTANT NOTE` 
-### If this is executed as `SUDO` then a system service will be created instead of user service
+
+> `IMPORTANT NOTE:`<br>If this is executed as `SUDO` then a system service will be created instead of user service
