@@ -1,4 +1,5 @@
 on: push
+name: qa
 jobs:
   code-testing:
     runs-on: ubuntu-latest
