@@ -26,3 +26,57 @@
 ```go
 go get github.com/codemodify/systemkit-service
 ```
+
+# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) API
+
+&nbsp;										| &nbsp;
+---     									| ---
+service := Service.New()                    | Create a new system service
+service.Install(false)	                    | Install a new system service
+service.Install(true)                       | Install a new system service and start
+service.Start()                             | Start system service 
+service.Restart()                           | Restart system service 
+service.Status()                            | System service status
+service.Stop()                              | Stop system service 
+service.Uninstall()                         | Uninstall system service 
+
+
+# ![](https://fonts.gstatic.com/s/i/materialicons/bookmarks/v4/24px.svg) Usage
+```go
+package main
+
+import (
+	"fmt"
+
+	"https://github.com/codemodify/systemkit-service/"
+)
+
+func main() {
+
+// Create service definition
+
+	usr, _ := user.Current()
+	service := Service.New(Service.Command{
+		Name:             "MY_SERVICE",
+		DisplayLabel:     "My Service",
+		Description:      "This service is a test service",
+		DocumentationURL: "",
+		Executable:       usr.HomeDir + "/Downloads/service.sh"),
+		Args:             []string{""},
+		WorkingDirectory: usr.HomeDir,
+	})
+
+// Instal and start
+	
+	err := service.Install(true)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+// Done
+```
+
+---
+
+> `IMPORTANT NOTE:`<br>If this is executed as `SUDO` then a system service will be created instead of user service
