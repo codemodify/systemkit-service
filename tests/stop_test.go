@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	helpersErrors "github.com/codemodify/systemkit-helpers"
+	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	service "github.com/codemodify/systemkit-service"
 )
 

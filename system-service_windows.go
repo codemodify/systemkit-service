@@ -12,11 +12,10 @@ import (
 	"golang.org/x/sys/windows/svc"
 	svcMgr "golang.org/x/sys/windows/svc/mgr"
 
-	helpersExec "github.com/codemodify/systemkit-helpers"
-	helpersJSON "github.com/codemodify/systemkit-helpers"
-	helpersReflect "github.com/codemodify/systemkit-helpers"
+	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
+	helpersExec "github.com/codemodify/systemkit-helpers-os"
+	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	loggingC "github.com/codemodify/systemkit-logging/contracts"
 )
 
 var logTag = "WINDOWS-SERVICE"
@@ -61,10 +60,7 @@ type WindowsService struct {
 
 // New -
 func New(command Command) SystemService {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: config object: %s ", logTag, helpersJSON.AsJSONString(command)),
-	})
+	logging.Instance().Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
 
 	return &WindowsService{
 		command: command,
@@ -73,10 +69,7 @@ func New(command Command) SystemService {
 
 // Run -
 func (thisRef *WindowsService) Run() error {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to run: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: attempting to run: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	wg := sync.WaitGroup{}
 
@@ -87,39 +80,24 @@ func (thisRef *WindowsService) Run() error {
 		wg.Done()
 	}()
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: running: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: running: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 	wg.Wait()
 
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: failed to run: %s, %v", logTag, thisRef.command.Name, err),
-		})
+		logging.Instance().Errorf("%s: failed to run: %s, %v, from %s", logTag, thisRef.command.Name, err, helpersReflect.GetThisFuncName())
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: stopped: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: stopped: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	return nil
 }
 
 // Install -
 func (thisRef *WindowsService) Install(start bool) error {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to install: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: attempting to install: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	// 1. check if service exists
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: check if exists: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: check if exists: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.command.Name)
 	if sError.Type == serviceErrorSuccess { // service already exists
@@ -141,19 +119,13 @@ func (thisRef *WindowsService) Install(start bool) error {
 			winServiceManager.Disconnect()
 		}
 
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: service '%s' encountered error %s", logTag, thisRef.command.Name, sError.Error.Error()),
-		})
+		logging.Instance().Errorf("%s: service '%s' encountered error %s, from %s", logTag, thisRef.command.Name, sError.Error.Error(), helpersReflect.GetThisFuncName())
 
 		return sError.Error
 	}
 
 	// 2. create the system service
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: creating: '%s', binary: '%s', args: '%s'", logTag, thisRef.command.Name, thisRef.command.Executable, thisRef.command.Args),
-	})
+	logging.Instance().Debugf("%s: creating: '%s', binary: '%s', args: '%s', from %s", logTag, thisRef.command.Name, thisRef.command.Executable, thisRef.command.Args, helpersReflect.GetThisFuncName())
 
 	winService, err := winServiceManager.CreateService(
 		thisRef.command.Name,
@@ -173,10 +145,7 @@ func (thisRef *WindowsService) Install(start bool) error {
 			winServiceManager.Disconnect()
 		}
 
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: error creating: %s, details: %v ", logTag, thisRef.command.Name, err),
-		})
+		logging.Instance().Errorf("%s: error creating: %s, details: %v, from %s", logTag, thisRef.command.Name, err, helpersReflect.GetThisFuncName())
 
 		return err
 	}
@@ -184,10 +153,7 @@ func (thisRef *WindowsService) Install(start bool) error {
 	winService.Close()
 	winServiceManager.Disconnect()
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: created: '%s', binary: '%s', args: '%s'", logTag, thisRef.command.Name, thisRef.command.Executable, thisRef.command.Args),
-	})
+	logging.Instance().Debugf("%s: created: '%s', binary: '%s', args: '%s', from %s", logTag, thisRef.command.Name, thisRef.command.Executable, thisRef.command.Args, helpersReflect.GetThisFuncName())
 
 	// 3. start if needed
 	if start {
@@ -200,10 +166,7 @@ func (thisRef *WindowsService) Install(start bool) error {
 // Start -
 func (thisRef *WindowsService) Start() error {
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to start: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: attempting to start: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.command.Name)
 	if sError.Type != serviceErrorSuccess {
@@ -216,19 +179,13 @@ func (thisRef *WindowsService) Start() error {
 	err := winService.Start()
 	if err != nil {
 		if !strings.Contains(err.Error(), "already running") {
-			logging.Instance().LogErrorWithFields(loggingC.Fields{
-				"method":  helpersReflect.GetThisFuncName(),
-				"message": fmt.Sprintf("%s: error starting: %s, %v", logTag, thisRef.command.Name, err),
-			})
+			logging.Instance().Errorf("%s: error starting: %s, %v, from %s", logTag, thisRef.command.Name, err, helpersReflect.GetThisFuncName())
 
 			return fmt.Errorf("error starting: %s, %v", thisRef.command.Name, err)
 		}
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: started: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: started: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	return nil
 }
@@ -245,23 +202,14 @@ func (thisRef *WindowsService) Restart() error {
 // Stop -
 func (thisRef *WindowsService) Stop() error {
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to stop: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: attempting to stop: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	if thisRef.command.OnStopDelegate != nil {
-		logging.Instance().LogDebugWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: OnStopDelegate before-calling: %s", logTag, thisRef.command.Name),
-		})
+		logging.Instance().Debugf("%s: OnStopDelegate before-calling: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 		thisRef.command.OnStopDelegate()
 
-		logging.Instance().LogDebugWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: OnStopDelegate after-calling: %s", logTag, thisRef.command.Name),
-		})
+		logging.Instance().Debugf("%s: OnStopDelegate after-calling: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 	}
 
 	// 2.
@@ -274,10 +222,7 @@ func (thisRef *WindowsService) Stop() error {
 			return nil
 		}
 
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: error %s, details: %s", logTag, thisRef.command.Name, err.Error()),
-		})
+		logging.Instance().Errorf("%s: error %s, details: %s, from %s", logTag, thisRef.command.Name, err.Error(), helpersReflect.GetThisFuncName())
 
 		return err
 	}
@@ -289,10 +234,7 @@ func (thisRef *WindowsService) Stop() error {
 	for {
 		attempt++
 
-		logging.Instance().LogDebugWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: waiting for service to stop", logTag),
-		})
+		logging.Instance().Debugf("%s: waiting for service to stop, from %s", logTag, helpersReflect.GetThisFuncName())
 
 		// Wait a few seconds before retrying
 		time.Sleep(wait)
@@ -313,10 +255,7 @@ func (thisRef *WindowsService) Stop() error {
 		}
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: stopped: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: stopped: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	return nil
 }
@@ -324,10 +263,7 @@ func (thisRef *WindowsService) Stop() error {
 // Uninstall -
 func (thisRef *WindowsService) Uninstall() error {
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to uninstall: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.command.Name)
 	if sError.Type == serviceErrorDoesNotExist {
@@ -341,18 +277,12 @@ func (thisRef *WindowsService) Uninstall() error {
 	// 2.
 	err := winService.Delete()
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: failed to uninstall: %s, %v", logTag, thisRef.command.Name, err),
-		})
+		logging.Instance().Errorf("%s: failed to uninstall: %s, %v, from %s", logTag, thisRef.command.Name, err, helpersReflect.GetThisFuncName())
 
 		return err
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: uninstalled: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: uninstalled: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	return nil
 }
@@ -360,10 +290,7 @@ func (thisRef *WindowsService) Uninstall() error {
 // Status -
 func (thisRef *WindowsService) Status() Status {
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: querying status: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: querying status: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, err := connectAndOpenService(thisRef.command.Name)
 	if err.Type != serviceErrorSuccess {
@@ -377,20 +304,14 @@ func (thisRef *WindowsService) Status() Status {
 	// 2.
 	stat, err1 := winService.Query()
 	if err1 != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprint("%s: error getting service status: %s", logTag, err1),
-		})
+		logging.Instance().Errorf("%s: error getting service status: %s, from %s", logTag, err1, helpersReflect.GetThisFuncName())
 
 		return Status{
 			Error: fmt.Errorf("error getting service status: %v", err1),
 		}
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: service status: %#v", logTag, stat),
-	})
+	logging.Instance().Debugf("%s: service status: %#v, from %s", logTag, stat, helpersReflect.GetThisFuncName())
 
 	status := Status{
 		PID:       int(stat.ProcessId),
@@ -405,26 +326,16 @@ func (thisRef *WindowsService) Status() Status {
 
 // Exists -
 func (thisRef *WindowsService) Exists() bool {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: checking existance: %s", logTag, thisRef.command.Name),
-	})
+	logging.Instance().Debugf("%s: checking existence: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	args := []string{"queryex", fmt.Sprintf("\"%s\"", thisRef.command.Name)}
 
 	// https://www.computerhope.com/sc-command.htm
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: running: 'sc %s'", logTag, strings.Join(args, " ")),
-	})
+	logging.Instance().Debugf("%s: running: 'sc %s', from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
 	_, err := helpersExec.ExecWithArgs("sc", args...)
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: error when checking %s: ", logTag, err),
-		})
-
+		logging.Instance().Errorf("%s: error when checking %s, from %s", logTag, err, helpersReflect.GetThisFuncName())
 		return false
 	}
 
@@ -443,10 +354,7 @@ func (thisRef *WindowsService) FileContent() ([]byte, error) {
 
 // Execute - implement the Windows `service.Handler` interface
 func (thisRef *WindowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: WINDOWS SERVICE EXECUTE", logTag),
-	})
+	logging.Instance().Debugf("%s: WINDOWS SERVICE EXECUTE, from %s", logTag, helpersReflect.GetThisFuncName())
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.StartPending}
@@ -465,23 +373,17 @@ loop:
 
 			case svc.Stop, svc.Shutdown:
 				if thisRef.command.OnStopDelegate != nil {
-					logging.Instance().LogDebugWithFields(loggingC.Fields{
-						"method":  helpersReflect.GetThisFuncName(),
-						"message": fmt.Sprintf("%s: OnStopDelegate before-calling: %s", logTag, thisRef.command.Name),
-					})
+					logging.Instance().Debugf("%s: OnStopDelegate before-calling: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 					go thisRef.command.OnStopDelegate()
 
-					logging.Instance().LogDebugWithFields(loggingC.Fields{
-						"method":  helpersReflect.GetThisFuncName(),
-						"message": fmt.Sprintf("%s: OnStopDelegate after-calling: %s", logTag, thisRef.command.Name),
-					})
+					logging.Instance().Debugf("%s: OnStopDelegate after-calling: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 				}
 
 				// golang.org/x/sys/windows/svc.TestExample is verifying this output.
 				// testOutput := strings.Join(args, "-")
 				// testOutput += fmt.Sprintf("-%d", c.Context)
-				// logging.Instance().LogDebugWithFields(loggingC.Fields{
+				// logging.Instance().LogDebugWithFields(logging.Fields{
 				// 	"method":  helpersReflect.GetThisFuncName(),
 				// 	"message": fmt.Sprintf("%s: %", logTag, testOutput),
 				// })
@@ -495,10 +397,7 @@ loop:
 				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 			default:
-				logging.Instance().LogWarningWithFields(loggingC.Fields{
-					"method":  helpersReflect.GetThisFuncName(),
-					"message": fmt.Sprintf("%s: unexpected control request #%d", logTag, c),
-				})
+				logging.Instance().Warningf("%s: unexpected control request #%d, from %s", logTag, c, helpersReflect.GetThisFuncName())
 			}
 		}
 	}
@@ -508,10 +407,7 @@ loop:
 }
 
 func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: attempting to control: %s, cmd: %v", logTag, thisRef.command.Name, command),
-	})
+	logging.Instance().Debugf("%s: attempting to control: %s, cmd: %v, from %s", logTag, thisRef.command.Name, command, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, err := connectAndOpenService(thisRef.command.Name)
 	if err.Type != serviceErrorSuccess {
@@ -522,10 +418,7 @@ func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
 
 	status, err1 := winService.Control(command)
 	if err1 != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: could not send control: %d, to: %s, details: %v", logTag, command, thisRef.command.Name, err1),
-		})
+		logging.Instance().Errorf("%s: could not send control: %d, to: %s, details: %v, from %s", logTag, command, thisRef.command.Name, err1, helpersReflect.GetThisFuncName())
 
 		return fmt.Errorf("could not send control: %d, to: %s, details: %v", command, thisRef.command.Name, err1)
 	}
@@ -534,10 +427,7 @@ func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
 	for status.State != state {
 		// Exit if a timeout is reached
 		if timeout.Before(time.Now()) {
-			logging.Instance().LogErrorWithFields(loggingC.Fields{
-				"method":  helpersReflect.GetThisFuncName(),
-				"message": fmt.Sprintf("%s: timeout waiting for service to go to state=%d", logTag, state),
-			})
+			logging.Instance().Errorf("%s: timeout waiting for service to go to state=%d, from %s", logTag, state, helpersReflect.GetThisFuncName())
 
 			return fmt.Errorf("timeout waiting for service to go to state=%d", state)
 		}
@@ -547,10 +437,7 @@ func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
 		// Make sure transition happens to the desired state
 		status, err1 = winService.Query()
 		if err1 != nil {
-			logging.Instance().LogErrorWithFields(loggingC.Fields{
-				"method":  helpersReflect.GetThisFuncName(),
-				"message": fmt.Sprintf("%s: could not retrieve service status: %v", logTag, err1),
-			})
+			logging.Instance().Errorf("%s: could not retrieve service status: %v, from %s", logTag, err1, helpersReflect.GetThisFuncName())
 
 			return fmt.Errorf("could not retrieve service status: %v", err1)
 		}
@@ -561,32 +448,20 @@ func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
 
 func connectAndOpenService(serviceName string) (*svcMgr.Mgr, *svcMgr.Service, serviceError) {
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: connecting to Windows Service Manager", logTag),
-	})
+	logging.Instance().Debugf("%s: connecting to Windows Service Manager, from %s", logTag, helpersReflect.GetThisFuncName())
 
 	winServiceManager, err := svcMgr.Connect()
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: error connecting to Windows Service Manager: %v", logTag, err),
-		})
+		logging.Instance().Errorf("%s: error connecting to Windows Service Manager: %v, from %s", logTag, err, helpersReflect.GetThisFuncName())
 		return nil, nil, serviceError{Type: serviceErrorCantConnect, Error: err}
 	}
 
 	// 2.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: opening service: %s", logTag, serviceName),
-	})
+	logging.Instance().Debugf("%s: opening service: %s, from %s", logTag, serviceName, helpersReflect.GetThisFuncName())
 
 	winService, err := winServiceManager.OpenService(serviceName)
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprintf("%s: error opening service: %s, %v", logTag, serviceName, err),
-		})
+		logging.Instance().Errorf("%s: error opening service: %s, %v, from %s", logTag, serviceName, err, helpersReflect.GetThisFuncName())
 
 		return winServiceManager, nil, serviceError{Type: serviceErrorDoesNotExist, Error: err}
 	}

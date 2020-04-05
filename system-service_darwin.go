@@ -4,7 +4,6 @@ package service
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,14 +11,13 @@ import (
 	"strings"
 	"text/template"
 
-	helpersErrors "github.com/codemodify/systemkit-helpers"
-	helpersExec "github.com/codemodify/systemkit-helpers"
-	helpersFiles "github.com/codemodify/systemkit-helpers"
-	helpersJSON "github.com/codemodify/systemkit-helpers"
-	helpersReflect "github.com/codemodify/systemkit-helpers"
-	helpersUser "github.com/codemodify/systemkit-helpers"
+	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
+	helpersFiles "github.com/codemodify/systemkit-helpers-files"
+	helpersExec "github.com/codemodify/systemkit-helpers-os"
+	helpersUser "github.com/codemodify/systemkit-helpers-os"
+	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
+	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	loggingC "github.com/codemodify/systemkit-logging/contracts"
 )
 
 var logTag = "MACOS-SYSTEM-SERVICE"
@@ -48,10 +46,7 @@ func New(command Command) SystemService {
 		command: command,
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: config object: %s ", logTag, helpersJSON.AsJSONString(command)),
-	})
+	logging.Instance().Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
 
 	return macOSService
 }
@@ -66,35 +61,23 @@ func (thisRef MacOSService) Install(start bool) error {
 	dir := filepath.Dir(thisRef.FilePath())
 
 	// 1.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: making sure folder exists: %s", logTag, dir),
-	})
+	logging.Instance().Debugf("%s: making sure folder exists: %s, from %s", logTag, dir, helpersReflect.GetThisFuncName())
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: generating plist file", logTag),
-	})
+	logging.Instance().Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
 	fileContent, err := thisRef.FileContent()
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: writing plist to: %s", logTag, thisRef.FilePath()),
-	})
+	logging.Instance().Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
 	err = ioutil.WriteFile(thisRef.FilePath(), fileContent, 0644)
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: wrote unit: %s", logTag, string(fileContent)),
-	})
+	logging.Instance().Debugf("%s: wrote unit: %s, from %s", logTag, string(fileContent), helpersReflect.GetThisFuncName())
 
 	// 3.
 	if start {
@@ -113,10 +96,7 @@ func (thisRef MacOSService) Start() error {
 	}
 
 	if strings.Contains(output, "service already loaded") {
-		logging.Instance().LogDebugWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprint("service already loaded"),
-		})
+		logging.Instance().Debugf("service already loaded, from %s", helpersReflect.GetThisFuncName())
 
 		return nil
 	}
@@ -154,10 +134,7 @@ func (thisRef MacOSService) Uninstall() error {
 	}
 
 	// 2.
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: remove plist file: %s", logTag, thisRef.FilePath()),
-	})
+	logging.Instance().Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
 	err = os.Remove(thisRef.FilePath())
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such file or directory") {
@@ -178,10 +155,7 @@ func (thisRef MacOSService) Uninstall() error {
 func (thisRef MacOSService) Status() Status {
 	output, err := runLaunchCtlCommand("list")
 	if err != nil {
-		logging.Instance().LogErrorWithFields(loggingC.Fields{
-			"method":  helpersReflect.GetThisFuncName(),
-			"message": fmt.Sprint("error getting launchctl status: ", err),
-		})
+		logging.Instance().Errorf("error getting launchctl status: %s, from %s", err, helpersReflect.GetThisFuncName())
 		return Status{
 			IsRunning: false,
 			PID:       -1,
@@ -281,10 +255,7 @@ func runLaunchCtlCommand(args ...string) (out string, err error) {
 	// 	args = append([]string{"--user"}, args...)
 	// }
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: RUN-LAUNCHCTL: launchctl %s", logTag, strings.Join(args, " ")),
-	})
+	logging.Instance().Debugf("%s: RUN-LAUNCHCTL: launchctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
 	output, err := helpersExec.ExecWithArgs("launchctl", args...)
 	errAsString := ""
@@ -292,10 +263,7 @@ func runLaunchCtlCommand(args ...string) (out string, err error) {
 		errAsString = err.Error()
 	}
 
-	logging.Instance().LogDebugWithFields(loggingC.Fields{
-		"method":  helpersReflect.GetThisFuncName(),
-		"message": fmt.Sprintf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s", logTag, output, errAsString),
-	})
+	logging.Instance().Debugf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }

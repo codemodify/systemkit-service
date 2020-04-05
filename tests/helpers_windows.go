@@ -5,7 +5,7 @@ package tests
 import (
 	"fmt"
 
-	helpersGuid "github.com/codemodify/systemkit-helpers"
+	helpersGuid "github.com/codemodify/systemkit-helpers-guid"
 	service "github.com/codemodify/systemkit-service"
 )
 
