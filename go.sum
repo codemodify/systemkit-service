@@ -8,8 +8,8 @@ github.com/codemodify/systemkit-helpers-os v1.7.9 h1:Z1EgPCkhj/zoZ9sKlgsx1lLw/eR
 github.com/codemodify/systemkit-helpers-os v1.7.9/go.mod h1:2j8txlmkBgd4jjTz5h2nAvRPeK2D5ibE2i2g3wrOnLk=
 github.com/codemodify/systemkit-helpers-reflection v1.7.9 h1:vPsYvbOiEZHT+rpoXlRx14IvzsKEAkYy7Aw2QEjF/G0=
 github.com/codemodify/systemkit-helpers-reflection v1.7.9/go.mod h1:HunZSrygIcl5IBmnWAYoDoqvFRVu7GIUvC0/scCfPzY=
-github.com/codemodify/systemkit-logging v1.7.9 h1:cGJu0WSQ8IpBHT/VaiDBvulGtQxY6DE1OpQAeVb9Sr4=
-github.com/codemodify/systemkit-logging v1.7.9/go.mod h1:29Zc9P/MnY2bgenJU9aoDszUef+Xf40b3ajtusTBC1Q=
+github.com/codemodify/systemkit-logging v1.8.2 h1:mLirYlQSczNJVh61/Q300AsRJfzmGzqG+sydPxFtCU4=
+github.com/codemodify/systemkit-logging v1.8.2/go.mod h1:29Zc9P/MnY2bgenJU9aoDszUef+Xf40b3ajtusTBC1Q=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/google/uuid v1.1.1 h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=

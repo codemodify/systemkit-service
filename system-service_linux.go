@@ -30,7 +30,7 @@ type LinuxService struct {
 
 // New -
 func New(command Command) SystemService {
-	logging.Instance().Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
 
 	return &LinuxService{
 		command: command,
@@ -47,25 +47,25 @@ func (thisRef LinuxService) Install(start bool) error {
 	dir := filepath.Dir(thisRef.FilePath())
 
 	// 1.
-	logging.Instance().Debugf("making sure folder exists: %s, from %s", dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("making sure folder exists: %s, from %s", dir, helpersReflect.GetThisFuncName())
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Instance().Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
 
 	fileContent, err := thisRef.FileContent()
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().Debugf("writing unit to: %s, from %s", thisRef.FilePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("writing unit to: %s, from %s", thisRef.FilePath(), helpersReflect.GetThisFuncName())
 
 	err = ioutil.WriteFile(thisRef.FilePath(), fileContent, 0644)
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().Debugf("wrote unit: %s, from %s", string(fileContent), helpersReflect.GetThisFuncName())
+	logging.Debugf("wrote unit: %s, from %s", string(fileContent), helpersReflect.GetThisFuncName())
 
 	// 3.
 	if start {
@@ -78,14 +78,14 @@ func (thisRef LinuxService) Install(start bool) error {
 // Start -
 func (thisRef LinuxService) Start() error {
 	// 1.
-	logging.Instance().Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
 	output, err := runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
-	logging.Instance().Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 	output, err = runSystemCtlCommand("enable", thisRef.command.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to enable unit") && strings.Contains(output, "does not exist") {
@@ -96,7 +96,7 @@ func (thisRef LinuxService) Start() error {
 	}
 
 	// 3.
-	logging.Instance().Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 	output, err = runSystemCtlCommand("start", thisRef.command.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
@@ -121,14 +121,14 @@ func (thisRef LinuxService) Restart() error {
 // Stop -
 func (thisRef LinuxService) Stop() error {
 	// 1.
-	logging.Instance().Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
 	_, err := runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
-	logging.Instance().Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 	output, err := runSystemCtlCommand("stop", thisRef.command.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
@@ -139,10 +139,10 @@ func (thisRef LinuxService) Stop() error {
 	}
 
 	// 3.
-	logging.Instance().Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 	output, err = runSystemCtlCommand("disable", thisRef.command.Name)
 	if err != nil {
-		logging.Instance().Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+		logging.Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 
 		if strings.Contains(output, "Failed to disable") && strings.Contains(output, "does not exist") {
 			return ErrServiceDoesNotExist
@@ -154,14 +154,14 @@ func (thisRef LinuxService) Stop() error {
 	}
 
 	// 4.
-	logging.Instance().Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
 	_, err = runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 5.
-	logging.Instance().Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
 	_, err = runSystemCtlCommand("reset-failed")
 	if err != nil {
 		return err
@@ -173,7 +173,7 @@ func (thisRef LinuxService) Stop() error {
 // Uninstall -
 func (thisRef LinuxService) Uninstall() error {
 	// 1.
-	logging.Instance().Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	// 2.
 	err := thisRef.Stop()
@@ -182,7 +182,7 @@ func (thisRef LinuxService) Uninstall() error {
 	}
 
 	// 3.
-	logging.Instance().Debugf("remove unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("remove unit file, from %s", helpersReflect.GetThisFuncName())
 	err = os.Remove(thisRef.FilePath())
 	if e, ok := err.(*os.PathError); ok {
 		if os.IsNotExist(e.Err) {
@@ -286,7 +286,7 @@ func runSystemCtlCommand(args ...string) (out string, err error) {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Instance().Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
 	output, err := helpersExec.ExecWithArgs("systemctl", args...)
 	errAsString := ""
@@ -294,7 +294,7 @@ func runSystemCtlCommand(args ...string) (out string, err error) {
 		errAsString = err.Error()
 	}
 
-	logging.Instance().Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }

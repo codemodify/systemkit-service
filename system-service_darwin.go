@@ -46,7 +46,7 @@ func New(command Command) SystemService {
 		command: command,
 	}
 
-	logging.Instance().Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
 
 	return macOSService
 }
@@ -61,23 +61,23 @@ func (thisRef MacOSService) Install(start bool) error {
 	dir := filepath.Dir(thisRef.FilePath())
 
 	// 1.
-	logging.Instance().Debugf("%s: making sure folder exists: %s, from %s", logTag, dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: making sure folder exists: %s, from %s", logTag, dir, helpersReflect.GetThisFuncName())
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Instance().Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
 	fileContent, err := thisRef.FileContent()
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
 	err = ioutil.WriteFile(thisRef.FilePath(), fileContent, 0644)
 	if err != nil {
 		return err
 	}
 
-	logging.Instance().Debugf("%s: wrote unit: %s, from %s", logTag, string(fileContent), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: wrote unit: %s, from %s", logTag, string(fileContent), helpersReflect.GetThisFuncName())
 
 	// 3.
 	if start {
@@ -96,7 +96,7 @@ func (thisRef MacOSService) Start() error {
 	}
 
 	if strings.Contains(output, "service already loaded") {
-		logging.Instance().Debugf("service already loaded, from %s", helpersReflect.GetThisFuncName())
+		logging.Debugf("service already loaded, from %s", helpersReflect.GetThisFuncName())
 
 		return nil
 	}
@@ -134,7 +134,7 @@ func (thisRef MacOSService) Uninstall() error {
 	}
 
 	// 2.
-	logging.Instance().Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
 	err = os.Remove(thisRef.FilePath())
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such file or directory") {
@@ -155,7 +155,7 @@ func (thisRef MacOSService) Uninstall() error {
 func (thisRef MacOSService) Status() Status {
 	output, err := runLaunchCtlCommand("list")
 	if err != nil {
-		logging.Instance().Errorf("error getting launchctl status: %s, from %s", err, helpersReflect.GetThisFuncName())
+		logging.Errorf("error getting launchctl status: %s, from %s", err, helpersReflect.GetThisFuncName())
 		return Status{
 			IsRunning: false,
 			PID:       -1,
@@ -255,7 +255,7 @@ func runLaunchCtlCommand(args ...string) (out string, err error) {
 	// 	args = append([]string{"--user"}, args...)
 	// }
 
-	logging.Instance().Debugf("%s: RUN-LAUNCHCTL: launchctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-LAUNCHCTL: launchctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
 	output, err := helpersExec.ExecWithArgs("launchctl", args...)
 	errAsString := ""
@@ -263,7 +263,7 @@ func runLaunchCtlCommand(args ...string) (out string, err error) {
 		errAsString = err.Error()
 	}
 
-	logging.Instance().Debugf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }
