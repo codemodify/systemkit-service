@@ -220,6 +220,8 @@ func (thisRef *WindowsService) Stop() error {
 			return ErrServiceDoesNotExist
 		} else if strings.Contains(e, "service has not been started") {
 			return nil
+		} else if strings.Contains(e, "the pipe has been ended") {
+			return nil
 		}
 
 		logging.Instance().Errorf("%s: error %s, details: %s, from %s", logTag, thisRef.command.Name, err.Error(), helpersReflect.GetThisFuncName())
@@ -239,10 +241,14 @@ func (thisRef *WindowsService) Stop() error {
 		// Wait a few seconds before retrying
 		time.Sleep(wait)
 
-		// Attempt to start the service again
+		// Attempt to stop the service again
 		stat := thisRef.Status()
 		if stat.Error != nil {
-			return err
+			if strings.Contains(stat.Error(), "the pipe has been ended") {
+				stat.IsRunning = false
+			} else {
+				return stat.Error
+			}
 		}
 
 		// If it is now running, exit the retry loop
