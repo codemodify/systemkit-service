@@ -9,28 +9,24 @@ import (
 	service "github.com/codemodify/systemkit-service"
 )
 
-func createService() service.SystemService {
-	return service.New(service.Command{
-		Name:             "systemkit-test-service",
-		DisplayLabel:     "SystemKit Test Service",
-		Description:      "SystemKit Test Service",
-		DocumentationURL: "",
-		Executable:       "htop",
-		Args:             []string{""},
-		WorkingDirectory: "/tmp",
-		StdOutPath:       "null",
-		RunAsUser:        "user",
+func createService() service.Service {
+	return service.NewServiceFromConfig(service.Config{
+		Name:               "systemkit-test-service",
+		Description:        "SystemKit Test Service",
+		Executable:         "htop",
+		Args:               []string{""},
+		WorkingDirectory:   "/tmp",
+		Restart:            true,
+		DelayBeforeRestart: 10,
 	})
 }
 
-func createRandomService() service.SystemService {
+func createRandomService() service.Service {
 	randomData := helpersGuid.NewGUID()
 
-	return service.New(service.Command{
+	return service.NewServiceFromConfig(service.Config{
 		Name:             fmt.Sprintf("systemkit-test-service-%s", randomData),
-		DisplayLabel:     fmt.Sprintf("SystemKit Test Service-%s", randomData),
 		Description:      fmt.Sprintf("SystemKit Test Service-%s", randomData),
-		DocumentationURL: "",
 		Executable:       "htop",
 		Args:             []string{""},
 		WorkingDirectory: "/tmp",
@@ -39,12 +35,10 @@ func createRandomService() service.SystemService {
 	})
 }
 
-func CreateRemoteitService() service.SystemService {
-	return service.New(service.Command{
+func createRemoteitService() service.Service {
+	return service.NewServiceFromConfig(service.Config{
 		Name:             "it.remote.cli",
-		DisplayLabel:     "it.remote.cli",
 		Description:      "it.remote.cli",
-		DocumentationURL: "",
 		Executable:       "/Users/nicolae/Downloads/remoteit_mac-osx_x86_64",
 		Args:             []string{"watch", "-v", "-c", "/etc/remoteit/config.json"},
 		WorkingDirectory: "",

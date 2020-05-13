@@ -5,9 +5,9 @@ import (
 )
 
 func Test_install(t *testing.T) {
-	service := CreateRemoteitService()
+	service := createService()
 
-	err := service.Install(false)
+	err := service.Install()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -16,7 +16,12 @@ func Test_install(t *testing.T) {
 func Test_install_and_start(t *testing.T) {
 	service := createService()
 
-	err := service.Install(true)
+	err := service.Install()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	err = service.Start()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -2,13 +2,10 @@ package main
 
 import (
 	"fmt"
-
-	// helpersErrors "github.com/codemodify/systemkit-helpers"
-	"github.com/codemodify/systemkit-service/tests"
 )
 
 func main() {
-	service := tests.CreateRemoteitService()
+	service := tests.createRemoteitService()
 
 	// err := service.Stop()
 	// if helpersErrors.Is(err, Service.ErrServiceDoesNotExist) {

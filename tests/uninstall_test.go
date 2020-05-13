@@ -5,7 +5,7 @@ import (
 )
 
 func Test_uninstall(t *testing.T) {
-	service := CreateRemoteitService()
+	service := createService()
 
 	err := service.Uninstall()
 	if err != nil {

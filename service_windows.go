@@ -53,22 +53,22 @@ type serviceError struct {
 	Error error
 }
 
-// WindowsService - Represents Windows service
-type WindowsService struct {
+// windowsService - Represents Windows service
+type windowsService struct {
 	command Command
 }
 
-// New -
-func New(command Command) SystemService {
+// newServiceFromConfig -
+func newServiceFromConfig(command Command) Service {
 	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(command), helpersReflect.GetThisFuncName())
 
-	return &WindowsService{
+	return &windowsService{
 		command: command,
 	}
 }
 
 // Run -
-func (thisRef *WindowsService) Run() error {
+func (thisRef *windowsService) Run() error {
 	logging.Debugf("%s: attempting to run: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	wg := sync.WaitGroup{}
@@ -93,7 +93,7 @@ func (thisRef *WindowsService) Run() error {
 }
 
 // Install -
-func (thisRef *WindowsService) Install(start bool) error {
+func (thisRef *windowsService) Install(start bool) error {
 	logging.Debugf("%s: attempting to install: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	// 1. check if service exists
@@ -164,7 +164,7 @@ func (thisRef *WindowsService) Install(start bool) error {
 }
 
 // Start -
-func (thisRef *WindowsService) Start() error {
+func (thisRef *windowsService) Start() error {
 	// 1.
 	logging.Debugf("%s: attempting to start: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
@@ -190,17 +190,8 @@ func (thisRef *WindowsService) Start() error {
 	return nil
 }
 
-// Restart -
-func (thisRef *WindowsService) Restart() error {
-	if err := thisRef.Stop(); err != nil {
-		return err
-	}
-
-	return thisRef.Start()
-}
-
 // Stop -
-func (thisRef *WindowsService) Stop() error {
+func (thisRef *windowsService) Stop() error {
 	// 1.
 	logging.Debugf("%s: attempting to stop: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
@@ -267,7 +258,7 @@ func (thisRef *WindowsService) Stop() error {
 }
 
 // Uninstall -
-func (thisRef *WindowsService) Uninstall() error {
+func (thisRef *windowsService) Uninstall() error {
 	// 1.
 	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
@@ -294,7 +285,7 @@ func (thisRef *WindowsService) Uninstall() error {
 }
 
 // Status -
-func (thisRef *WindowsService) Status() Status {
+func (thisRef *windowsService) Status() Status {
 	// 1.
 	logging.Debugf("%s: querying status: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
@@ -331,7 +322,7 @@ func (thisRef *WindowsService) Status() Status {
 }
 
 // Exists -
-func (thisRef *WindowsService) Exists() bool {
+func (thisRef *windowsService) Exists() bool {
 	logging.Debugf("%s: checking existence: %s, from %s", logTag, thisRef.command.Name, helpersReflect.GetThisFuncName())
 
 	args := []string{"queryex", fmt.Sprintf("\"%s\"", thisRef.command.Name)}
@@ -349,17 +340,17 @@ func (thisRef *WindowsService) Exists() bool {
 }
 
 // FilePath -
-func (thisRef *WindowsService) FilePath() string {
+func (thisRef *windowsService) FilePath() string {
 	return ""
 }
 
 // FileContent -
-func (thisRef *WindowsService) FileContent() ([]byte, error) {
+func (thisRef *windowsService) FileContent() ([]byte, error) {
 	return []byte{}, nil
 }
 
 // Execute - implement the Windows `service.Handler` interface
-func (thisRef *WindowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
+func (thisRef *windowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	logging.Debugf("%s: WINDOWS SERVICE EXECUTE, from %s", logTag, helpersReflect.GetThisFuncName())
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
@@ -412,7 +403,7 @@ loop:
 	return
 }
 
-func (thisRef *WindowsService) control(command svc.Cmd, state svc.State) error {
+func (thisRef *windowsService) control(command svc.Cmd, state svc.State) error {
 	logging.Debugf("%s: attempting to control: %s, cmd: %v, from %s", logTag, thisRef.command.Name, command, helpersReflect.GetThisFuncName())
 
 	winServiceManager, winService, err := connectAndOpenService(thisRef.command.Name)

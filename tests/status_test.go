@@ -6,23 +6,23 @@ import (
 )
 
 func Test_status(t *testing.T) {
-	service := CreateRemoteitService()
+	service := createService()
 
-	serviceStatus := service.Status()
-	if serviceStatus.Error != nil {
-		t.Fatalf(serviceStatus.Error.Error())
+	serviceInfo := service.Info()
+	if serviceInfo.Error != nil {
+		t.Fatalf(serviceInfo.Error.Error())
 	}
 
-	fmt.Println(serviceStatus)
+	fmt.Println(serviceInfo)
 }
 
 func Test_status_non_existing(t *testing.T) {
 	service := createRandomService()
 
-	serviceStatus := service.Status()
-	if serviceStatus.Error != nil {
-		t.Fatalf(serviceStatus.Error.Error())
+	serviceInfo := service.Info()
+	if serviceInfo.Error != nil {
+		t.Fatalf(serviceInfo.Error.Error())
 	}
 
-	fmt.Println(serviceStatus)
+	fmt.Println(serviceInfo)
 }
