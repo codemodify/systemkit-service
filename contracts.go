@@ -10,6 +10,9 @@ var ErrServiceDoesNotExist = errors.New("Service does not exist")
 // ErrServiceConfigError -
 var ErrServiceConfigError = errors.New("Service config error")
 
+// ErrServiceUnsupportedRequest -
+var ErrServiceUnsupportedRequest = errors.New("Service unsupported request")
+
 // LogConfig -
 type LogConfig struct {
 	Disable    bool   `json:"disable,omitempty"`    // will disable the service logging

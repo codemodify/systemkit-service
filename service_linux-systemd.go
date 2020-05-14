@@ -51,10 +51,10 @@ func newServiceFromName(name string) (Service, error) {
 		return nil, ErrServiceDoesNotExist
 	}
 
-	return newServiceFromTemplate(name, string(fileContent)), nil
+	return newServiceFromTemplate(name, string(fileContent))
 }
 
-func newServiceFromTemplate(name string, template string) Service {
+func newServiceFromTemplate(name string, template string) (Service, error) {
 	logging.Debugf("%s: template: %s, from %s", logTag, template, helpersReflect.GetThisFuncName())
 
 	config := Config{
@@ -116,7 +116,7 @@ func newServiceFromTemplate(name string, template string) Service {
 		config:                 config,
 		useConfigAsFileContent: false,
 		fileContentTemplate:    template,
-	}
+	}, nil
 }
 
 func (thisRef systemdService) Install() error {
@@ -374,7 +374,7 @@ func (thisRef systemdService) fileContentFromDisk() ([]byte, error) {
 	return ioutil.ReadFile(thisRef.filePath())
 }
 
-func runSystemCtlCommand(args ...string) (out string, err error) {
+func runSystemCtlCommand(args ...string) (string, error) {
 	if !helpersUser.IsRoot() {
 		args = append([]string{"--user"}, args...)
 	}

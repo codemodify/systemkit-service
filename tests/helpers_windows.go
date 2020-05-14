@@ -9,32 +9,31 @@ import (
 	service "github.com/codemodify/systemkit-service"
 )
 
-func createService() service.SystemService {
-	return service.New(service.Command{
-		Name:             "systemkit-test-service",
-		DisplayLabel:     "SystemKit Test Service",
-		Description:      "SystemKit Test Service",
-		DocumentationURL: "",
-		Executable:       "C:\\Program Files (x86)\\Plex\\Plex Media Server\\Plex Update Service.exe",
-		Args:             []string{""},
-		WorkingDirectory: "/tmp",
-		StdOutPath:       "null",
-		RunAsUser:        "user",
+func createService() service.Service {
+	return service.NewServiceFromConfig(service.Config{
+		Name:        "systemkit-test-service",
+		Description: "SystemKit Test Service",
+		// Executable:       "C:\\Program Files (x86)\\Plex\\Plex Media Server\\Plex Update Service.exe",
+		Executable:       "C:\\Windows\\notepad.exe",
+		Args:             []string{"aaaaaaaaaaa"},
+		WorkingDirectory: "C:\\Windows",
+		StdOut: service.LogConfig{
+			Disable: true,
+		},
+		StdErr: service.LogConfig{
+			Disable: true,
+		},
 	})
 }
 
-func createRandomService() service.SystemService {
+func createRandomService() service.Service {
 	randomData := helpersGuid.NewGUID()
 
-	return service.New(service.Command{
-		Name:             fmt.Sprintf("systemkit-test-service-%s", randomData),
-		DisplayLabel:     fmt.Sprintf("SystemKit Test Service-%s", randomData),
-		Description:      fmt.Sprintf("SystemKit Test Service-%s", randomData),
-		DocumentationURL: "",
-		Executable:       "C:\\Program Files (x86)\\Plex\\Plex Media Server\\Plex Update Service.exe",
-		Args:             []string{""},
-		WorkingDirectory: "/tmp",
-		StdOutPath:       "null",
-		RunAsUser:        "user",
-	})
+	s := createService()
+
+	config := s.Info().Config
+	config.Name = fmt.Sprintf("%s-%s", config.Name, randomData)
+	config.Description = fmt.Sprintf("%s-%s", config.Description, randomData)
+
+	return service.NewServiceFromConfig(config)
 }

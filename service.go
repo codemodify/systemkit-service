@@ -35,6 +35,6 @@ func NewServiceFromName(name string) (Service, error) {
 }
 
 // NewServiceFromTemplate -
-func NewServiceFromTemplate(name string, template string) Service {
+func NewServiceFromTemplate(name string, template string) (Service, error) {
 	return newServiceFromTemplate(name, template)
 }
