@@ -10,4 +10,4 @@
 **/*.log
 
 # ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~ ~~~~
-.helper-files/.vagrant
+.vagrant

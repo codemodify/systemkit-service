@@ -1,4 +1,5 @@
-// +build linux
+// +build !windows
+// +build !darwin
 
 package service
 
@@ -20,27 +21,27 @@ import (
 	logging "github.com/codemodify/systemkit-logging"
 )
 
-var logTag = "SYSTEMD-SERVICE"
+var logTagUpstart = "SYSTEMD-SERVICE"
 
-type systemdService struct {
+type upstartService struct {
 	config                 Config
 	useConfigAsFileContent bool
 	fileContentTemplate    string
 }
 
-func newServiceFromConfig(config Config) Service {
+func newServiceFromConfig_Upstart(config Config) Service {
 
 	config.DependsOn = append(config.DependsOn, "network.target")
 
-	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: config object: %s, from %s", logTagUpstart, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
 
-	return &systemdService{
+	return &upstartService{
 		config:                 config,
 		useConfigAsFileContent: true,
 	}
 }
 
-func newServiceFromName(name string) (Service, error) {
+func newServiceFromName_Upstart(name string) (Service, error) {
 	serviceFile := filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", name+".service")
 	if helpersUser.IsRoot() {
 		serviceFile = filepath.Join("/etc/systemd/system", name+".service")
@@ -51,11 +52,11 @@ func newServiceFromName(name string) (Service, error) {
 		return nil, ErrServiceDoesNotExist
 	}
 
-	return newServiceFromTemplate(name, string(fileContent))
+	return newServiceFromTemplate_Upstart(name, string(fileContent))
 }
 
-func newServiceFromTemplate(name string, template string) (Service, error) {
-	logging.Debugf("%s: template: %s, from %s", logTag, template, helpersReflect.GetThisFuncName())
+func newServiceFromTemplate_Upstart(name string, template string) (Service, error) {
+	logging.Debugf("%s: template: %s, from %s", logTagUpstart, template, helpersReflect.GetThisFuncName())
 
 	config := Config{
 		Name: name,
@@ -112,14 +113,14 @@ func newServiceFromTemplate(name string, template string) (Service, error) {
 		}
 	}
 
-	return &systemdService{
+	return &upstartService{
 		config:                 config,
 		useConfigAsFileContent: false,
 		fileContentTemplate:    template,
 	}, nil
 }
 
-func (thisRef systemdService) Install() error {
+func (thisRef upstartService) Install() error {
 	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
@@ -150,9 +151,9 @@ func (thisRef systemdService) Install() error {
 	return nil
 }
 
-func (thisRef systemdService) Uninstall() error {
+func (thisRef upstartService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagUpstart, thisRef.config.Name, helpersReflect.GetThisFuncName())
 
 	// 2.
 	err := thisRef.Stop()
@@ -172,17 +173,17 @@ func (thisRef systemdService) Uninstall() error {
 	return err
 }
 
-func (thisRef systemdService) Start() error {
+func (thisRef upstartService) Start() error {
 	// 1.
 	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	output, err := runSystemCtlCommand("daemon-reload")
+	output, err := runInitctlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
 	logging.Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runSystemCtlCommand("enable", thisRef.config.Name)
+	output, err = runInitctlCommand("enable", thisRef.config.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to enable unit") && strings.Contains(output, "does not exist") {
 			return ErrServiceDoesNotExist
@@ -193,7 +194,7 @@ func (thisRef systemdService) Start() error {
 
 	// 3.
 	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runSystemCtlCommand("start", thisRef.config.Name)
+	output, err = runInitctlCommand("start", thisRef.config.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
 			return ErrServiceDoesNotExist
@@ -205,17 +206,17 @@ func (thisRef systemdService) Start() error {
 	return nil
 }
 
-func (thisRef systemdService) Stop() error {
+func (thisRef upstartService) Stop() error {
 	// 1.
 	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err := runSystemCtlCommand("daemon-reload")
+	_, err := runInitctlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
 	logging.Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err := runSystemCtlCommand("stop", thisRef.config.Name)
+	output, err := runInitctlCommand("stop", thisRef.config.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
 			return ErrServiceDoesNotExist
@@ -226,7 +227,7 @@ func (thisRef systemdService) Stop() error {
 
 	// 3.
 	logging.Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runSystemCtlCommand("disable", thisRef.config.Name)
+	output, err = runInitctlCommand("disable", thisRef.config.Name)
 	if err != nil {
 		logging.Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
 
@@ -241,14 +242,14 @@ func (thisRef systemdService) Stop() error {
 
 	// 4.
 	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err = runSystemCtlCommand("daemon-reload")
+	_, err = runInitctlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 5.
 	logging.Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
-	_, err = runSystemCtlCommand("reset-failed")
+	_, err = runInitctlCommand("reset-failed")
 	if err != nil {
 		return err
 	}
@@ -256,7 +257,7 @@ func (thisRef systemdService) Stop() error {
 	return nil
 }
 
-func (thisRef systemdService) Info() Info {
+func (thisRef upstartService) Info() Info {
 	fileContent, _ := thisRef.fileContentFromDisk()
 
 	result := Info{
@@ -268,7 +269,7 @@ func (thisRef systemdService) Info() Info {
 		FileContent: string(fileContent),
 	}
 
-	output, err := runSystemCtlCommand("status", thisRef.config.Name)
+	output, err := runInitctlCommand("status", thisRef.config.Name)
 	if err != nil {
 		result.Error = err
 		return result
@@ -295,7 +296,7 @@ func (thisRef systemdService) Info() Info {
 	return result
 }
 
-func (thisRef systemdService) filePath() string {
+func (thisRef upstartService) filePath() string {
 	if helpersUser.IsRoot() {
 		return filepath.Join("/etc/systemd/system", thisRef.config.Name+".service")
 	}
@@ -303,7 +304,7 @@ func (thisRef systemdService) filePath() string {
 	return filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", thisRef.config.Name+".service")
 }
 
-func (thisRef systemdService) fileContentFromConfig() ([]byte, error) {
+func (thisRef upstartService) fileContentFromConfig() ([]byte, error) {
 	// for SystemD move everything into config.Executable
 	if len(thisRef.config.Args) > 0 {
 		thisRef.config.Executable = fmt.Sprintf(
@@ -370,16 +371,16 @@ WantedBy=multi-user.target
 	return []byte(fileTemplateAsString), nil
 }
 
-func (thisRef systemdService) fileContentFromDisk() ([]byte, error) {
+func (thisRef upstartService) fileContentFromDisk() ([]byte, error) {
 	return ioutil.ReadFile(thisRef.filePath())
 }
 
-func runSystemCtlCommand(args ...string) (string, error) {
+func runInitctlCommand(args ...string) (string, error) {
 	if !helpersUser.IsRoot() {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTagUpstart, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
 	output, err := helpersExec.ExecWithArgs("systemctl", args...)
 	errAsString := ""
@@ -387,7 +388,7 @@ func runSystemCtlCommand(args ...string) (string, error) {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTagUpstart, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }
