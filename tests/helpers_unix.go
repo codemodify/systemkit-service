@@ -13,11 +13,17 @@ func createService() service.Service {
 	return service.NewServiceFromConfig(service.Config{
 		Name:               "systemkit-test-service",
 		Description:        "SystemKit Test Service",
-		Executable:         "htop",
-		Args:               []string{""},
+		Executable:         "vim",
+		Args:               []string{},
 		WorkingDirectory:   "/tmp",
 		Restart:            true,
 		DelayBeforeRestart: 10,
+		StdOut: service.LogConfig{
+			Disable: true,
+		},
+		StdErr: service.LogConfig{
+			Disable: true,
+		},
 	})
 }
 
@@ -30,19 +36,27 @@ func createRandomService() service.Service {
 		Executable:       "htop",
 		Args:             []string{""},
 		WorkingDirectory: "/tmp",
-		StdOutPath:       "null",
-		RunAsUser:        "user",
+		StdOut: service.LogConfig{
+			Disable: true,
+		},
+		StdErr: service.LogConfig{
+			Disable: true,
+		},
 	})
 }
 
-func createRemoteitService() service.Service {
+func CreateRemoteitService() service.Service {
 	return service.NewServiceFromConfig(service.Config{
 		Name:             "it.remote.cli",
 		Description:      "it.remote.cli",
 		Executable:       "/Users/nicolae/Downloads/remoteit_mac-osx_x86_64",
 		Args:             []string{"watch", "-v", "-c", "/etc/remoteit/config.json"},
 		WorkingDirectory: "",
-		StdOutPath:       "null",
-		RunAsUser:        "user",
+		StdOut: service.LogConfig{
+			Disable: true,
+		},
+		StdErr: service.LogConfig{
+			Disable: true,
+		},
 	})
 }

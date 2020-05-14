@@ -17,6 +17,7 @@ import (
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
+	"github.com/groob/plist"
 )
 
 var logTag = "LAUNCHD-SERVICE"
@@ -35,9 +36,13 @@ func newServiceFromConfig(config Config) Service {
 		logDir = filepath.Join("/Library/Logs", config.Name)
 	}
 
-	config.Args = append([]string{config.Executable}, config.Args...)
-	config.StdOutPath = filepath.Join(logDir, config.Name+".stdout.log")
-	config.StdErrPath = filepath.Join(logDir, config.Name+".stderr.log")
+	if config.StdOut.UseDefault {
+		config.StdOut.Value = filepath.Join(logDir, config.Name+".stdout.log")
+	}
+
+	if config.StdErr.UseDefault {
+		config.StdErr.Value = filepath.Join(logDir, config.Name+".stderr.log")
+	}
 
 	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
 
@@ -68,50 +73,42 @@ func newServiceFromTemplate(name string, template string) Service {
 
 	config := Config{
 		Name: name,
+		StdOut: LogConfig{
+			Disable: true,
+		},
+		StdErr: LogConfig{
+			Disable: true,
+		},
 	}
 
-	for _, line := range strings.Split(template, "\n") {
-		if strings.Contains(line, "Description=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Description=")
-			if len(lineParts) >= 0 {
-				config.Description = lineParts[0]
-			}
-		} else if strings.Contains(line, "Documentation=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Documentation=")
-			if len(lineParts) >= 0 {
-				config.Documentation = lineParts[0]
-			}
-		} else if strings.Contains(line, "ExecStart=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "ExecStart=")
-			if len(lineParts) >= 0 {
-				config.Executable = lineParts[0]
-			}
-		} else if strings.Contains(line, "WorkingDirectory=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "WorkingDirectory=")
-			if len(lineParts) >= 0 {
-				config.WorkingDirectory = lineParts[0]
-			}
-		} else if strings.Contains(line, "StandardOutput=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "StandardOutput=")
-			if len(lineParts) >= 0 {
-				config.StdOutPath = lineParts[0]
-			}
-		} else if strings.Contains(line, "StandardError=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "StandardError=")
-			if len(lineParts) >= 0 {
-				config.StdErrPath = lineParts[0]
-			}
-		} else if strings.Contains(line, "User=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "User=")
-			if len(lineParts) >= 0 {
-				config.RunAsUser = lineParts[0]
-			}
-		} else if strings.Contains(line, "Group=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Group=")
-			if len(lineParts) >= 0 {
-				config.RunAsGroup = lineParts[0]
-			}
+	var plistData struct {
+		Label             *string  `plist:"Label"`
+		ProgramArguments  []string `plist:"ProgramArguments"`
+		StandardOutPath   *string  `plist:"StandardOutPath"`
+		StandardErrorPath *string  `plist:"StandardErrorPath"`
+		KeepAlive         *bool    `plist:"KeepAlive"`
+		WorkingDirectory  *string  `plist:"WorkingDirectory"`
+	}
+
+	if err := plist.NewXMLDecoder(strings.NewReader(template)).Decode(&plistData); err != nil {
+		logging.Errorf("%s: error parsing PLIST: %s, from %s", logTag, err.Error(), helpersReflect.GetThisFuncName())
+	} else {
+		if len(plistData.ProgramArguments) > 0 {
+			config.Executable = plistData.ProgramArguments[0]
+			config.Args = plistData.ProgramArguments[1:]
 		}
+		if plistData.StandardOutPath != nil {
+			config.StdOut.Disable = false
+			config.StdOut.UseDefault = false
+			config.StdOut.Value = *plistData.StandardOutPath
+		}
+		if plistData.StandardErrorPath != nil {
+			config.StdErr.Disable = false
+			config.StdErr.UseDefault = false
+			config.StdErr.Value = *plistData.StandardErrorPath
+		}
+		config.Restart = *plistData.KeepAlive
+		config.WorkingDirectory = *plistData.WorkingDirectory
 	}
 
 	return &launchdService{
@@ -122,7 +119,7 @@ func newServiceFromTemplate(name string, template string) Service {
 }
 
 func (thisRef launchdService) Install() error {
-	dir := filepath.Dir(thisRef.FilePath())
+	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
 	logging.Debugf("%s: making sure folder exists: %s, from %s", logTag, dir, helpersReflect.GetThisFuncName())
@@ -135,18 +132,13 @@ func (thisRef launchdService) Install() error {
 		return err
 	}
 
-	logging.Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
-	err = ioutil.WriteFile(thisRef.FilePath(), fileContent, 0644)
+	logging.Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.filePath(), helpersReflect.GetThisFuncName())
+	err = ioutil.WriteFile(thisRef.filePath(), fileContent, 0644)
 	if err != nil {
 		return err
 	}
 
 	logging.Debugf("%s: wrote unit: %s, from %s", logTag, string(fileContent), helpersReflect.GetThisFuncName())
-
-	// 3.
-	if start {
-		return thisRef.Start()
-	}
 
 	return nil
 }
@@ -159,8 +151,8 @@ func (thisRef launchdService) Uninstall() error {
 	}
 
 	// 2.
-	logging.Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.FilePath(), helpersReflect.GetThisFuncName())
-	err = os.Remove(thisRef.FilePath())
+	logging.Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.filePath(), helpersReflect.GetThisFuncName())
+	err = os.Remove(thisRef.filePath())
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such file or directory") {
 			return nil
@@ -178,9 +170,11 @@ func (thisRef launchdService) Uninstall() error {
 
 func (thisRef launchdService) Start() error {
 	// 1.
-	output, _ := runLaunchCtlCommand("load", "-w", thisRef.FilePath())
+	output, _ := runLaunchCtlCommand("load", "-w", thisRef.filePath())
 	if strings.Contains(output, "No such file or directory") {
 		return ErrServiceDoesNotExist
+	} else if strings.Contains(output, "Invalid property list") {
+		return ErrServiceConfigError
 	}
 
 	if strings.Contains(output, "service already loaded") {
@@ -195,7 +189,7 @@ func (thisRef launchdService) Start() error {
 
 func (thisRef launchdService) Stop() error {
 	runLaunchCtlCommand("stop", thisRef.config.Name)
-	output, err := runLaunchCtlCommand("unload", thisRef.FilePath())
+	output, err := runLaunchCtlCommand("unload", thisRef.filePath())
 	if strings.Contains(output, "Could not find specified service") {
 		return ErrServiceDoesNotExist
 	}
@@ -204,47 +198,47 @@ func (thisRef launchdService) Stop() error {
 }
 
 func (thisRef launchdService) Info() Info {
+	fileContent, fileContentErr := thisRef.fileContentFromDisk()
+
+	result := Info{
+		Error:       nil,
+		Config:      thisRef.config,
+		IsRunning:   false,
+		PID:         -1,
+		FilePath:    thisRef.filePath(),
+		FileContent: string(fileContent),
+	}
+
+	if fileContentErr != nil || len(fileContent) <= 0 {
+		result.Error = ErrServiceDoesNotExist
+	}
+
 	output, err := runLaunchCtlCommand("list")
 	if err != nil {
+		result.Error = err
 		logging.Errorf("error getting launchctl status: %s, from %s", err, helpersReflect.GetThisFuncName())
-		return Status{
-			IsRunning: false,
-			PID:       -1,
-			Error:     err,
-		}
+		return result
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
-	if thisRef.config.Name == "" {
-		return Status{}
-	}
-
-	status := Status{
-		IsRunning: false,
-		PID:       -1,
-		Error:     nil,
-	}
 	for _, line := range lines {
 		chunks := strings.Split(line, "\t")
 
 		if chunks[2] == thisRef.config.Name {
 			if chunks[0] != "-" {
-				pid, err := strconv.Atoi(chunks[0])
-				if err != nil {
-					return status
-				}
-				status.PID = pid
+				pid, _ := strconv.Atoi(chunks[0])
+				result.PID = pid
 			}
 
-			if status.PID != -1 {
-				status.IsRunning = true
+			if result.PID != -1 {
+				result.IsRunning = true
 			}
 
 			break
 		}
 	}
 
-	return status
+	return result
 }
 
 func (thisRef launchdService) filePath() string {
@@ -256,6 +250,16 @@ func (thisRef launchdService) filePath() string {
 }
 
 func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
+	// on macOS set member config.Args to include executable
+	args := []string{thisRef.config.Executable}
+
+	if len(thisRef.config.Args) > 0 {
+		args = append(args, thisRef.config.Args...)
+	}
+
+	thisRef.config.Args = args
+
+	// run the template
 	plistTemplate := template.Must(template.New("launchdFile").Parse(`
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\" >
@@ -269,16 +273,20 @@ func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
 			<string>{{ $arg }}</string>{{ end }}
 		</array>
 
+		{{ if eq .StdOut.Disable false}}
 		<key>StandardOutPath</key>
-		<string>{{ .StdOutPath }}</string>
+		<string>{{ .StdOut.Value }}</string>
+		{{ end }}
 
+		{{ if eq .StdErr.Disable false}}
 		<key>StandardErrorPath</key>
-		<string>{{ .StdErrPath }}</string>
+		<string>{{ .StdErr.Value }}</string>
+		{{ end }}
 
 		<key>KeepAlive</key>
-		<{{ .KeepAlive }}/>
+		<{{ .Restart }}/>
 		<key>RunAtLoad</key>
-		<{{ .RunAtLoad }}/>
+		<true/>
 
 		<key>WorkingDirectory</key>
 		<string>{{ .WorkingDirectory }}</string>
@@ -292,6 +300,10 @@ func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
 	}
 
 	return plistTemplateBytes.Bytes(), nil
+}
+
+func (thisRef launchdService) fileContentFromDisk() ([]byte, error) {
+	return ioutil.ReadFile(thisRef.filePath())
 }
 
 func runLaunchCtlCommand(args ...string) (out string, err error) {
