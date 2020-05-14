@@ -59,49 +59,56 @@ func newServiceFromTemplate(name string, template string) Service {
 
 	config := Config{
 		Name: name,
+		StdOut: LogConfig{
+			Disable: true,
+		},
+		StdErr: LogConfig{
+			Disable: true,
+		},
 	}
 
 	for _, line := range strings.Split(template, "\n") {
-		if strings.Contains(line, "Description=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Description=")
-			if len(lineParts) >= 0 {
-				config.Description = lineParts[0]
-			}
+		if strings.Contains(line, "After=") {
+			cleanLine := strings.TrimSpace(strings.Replace(line, "After=", "", 1))
+			config.DependsOn = strings.Split(cleanLine, " ")
+
+		} else if strings.Contains(line, "Description=") {
+			config.Description = strings.TrimSpace(strings.Replace(line, "Description=", "", 1))
+
 		} else if strings.Contains(line, "Documentation=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Documentation=")
-			if len(lineParts) >= 0 {
-				config.Documentation = lineParts[0]
-			}
+			config.Documentation = strings.TrimSpace(strings.Replace(line, "Documentation=", "", 1))
+
 		} else if strings.Contains(line, "ExecStart=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "ExecStart=")
-			if len(lineParts) >= 0 {
-				config.Executable = lineParts[0]
-			}
+			cleanLine := strings.TrimSpace(strings.Replace(line, "ExecStart=", "", 1))
+			parts := strings.Split(cleanLine, " ")
+			config.Executable = parts[0]
+			config.Args = parts[1:]
+
 		} else if strings.Contains(line, "WorkingDirectory=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "WorkingDirectory=")
-			if len(lineParts) >= 0 {
-				config.WorkingDirectory = lineParts[0]
-			}
+			config.WorkingDirectory = strings.TrimSpace(strings.Replace(line, "WorkingDirectory=", "", 1))
+
+		} else if strings.Contains(line, "Restart=") {
+			config.Restart = true
+
+		} else if strings.Contains(line, "RestartSec=") {
+			cleanLine := strings.TrimSpace(strings.Replace(line, "RestartSec=", "", 1))
+			config.DelayBeforeRestart, _ = strconv.Atoi(cleanLine)
+
 		} else if strings.Contains(line, "StandardOutput=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "StandardOutput=")
-			if len(lineParts) >= 0 {
-				config.StdOutPath = lineParts[0]
-			}
+			config.StdOut.Disable = false
+			config.StdOut.UseDefault = false
+			config.StdOut.Value = strings.TrimSpace(strings.Replace(line, "StandardOutput=", "", 1))
+
 		} else if strings.Contains(line, "StandardError=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "StandardError=")
-			if len(lineParts) >= 0 {
-				config.StdErrPath = lineParts[0]
-			}
+			config.StdErr.Disable = false
+			config.StdErr.UseDefault = false
+			config.StdErr.Value = strings.TrimSpace(strings.Replace(line, "StandardError=", "", 1))
+
 		} else if strings.Contains(line, "User=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "User=")
-			if len(lineParts) >= 0 {
-				config.RunAsUser = lineParts[0]
-			}
+			config.RunAsUser = strings.TrimSpace(strings.Replace(line, "User=", "", 1))
+
 		} else if strings.Contains(line, "Group=") {
-			lineParts := strings.Split(strings.TrimSpace(line), "Group=")
-			if len(lineParts) >= 0 {
-				config.RunAsGroup = lineParts[0]
-			}
+			config.RunAsGroup = strings.TrimSpace(strings.Replace(line, "Group=", "", 1))
 		}
 	}
 
@@ -258,7 +265,7 @@ func (thisRef systemdService) Info() Info {
 		IsRunning:   false,
 		PID:         -1,
 		FilePath:    thisRef.filePath(),
-		FileContent: fileContent,
+		FileContent: string(fileContent),
 	}
 
 	output, err := runSystemCtlCommand("status", thisRef.config.Name)
@@ -321,8 +328,9 @@ WorkingDirectory={{ .WorkingDirectory }}
 Restart=$Restart$
 RestartSec={{ .DelayBeforeRestart }}
 Type=simple
-{{ if .StdOutPath }}StandardOutput={{ .StdOutPath }}{{ end }}
-{{ if .StdErrPath }}StandardError={{ .StdErrPath }}{{ end }}
+
+{{ if eq .StdOut.Disable false}}StandardOutput={{ .StdOut.Value }}{{ end }}
+{{ if eq .StdErr.Disable false}}StandardError={{ .StdErr.Value }}{{ end }}
 
 {{ if .RunAsUser }}User={{ .RunAsUser }}{{ end }}
 {{ if .RunAsGroup }}Group={{ .RunAsGroup }}{{ end }}

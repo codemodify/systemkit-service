@@ -13,8 +13,8 @@ func createService() service.Service {
 	return service.NewServiceFromConfig(service.Config{
 		Name:               "systemkit-test-service",
 		Description:        "SystemKit Test Service",
-		Executable:         "vim",
-		Args:               []string{},
+		Executable:         "/bin/sleep",
+		Args:               []string{"40"},
 		WorkingDirectory:   "/tmp",
 		Restart:            true,
 		DelayBeforeRestart: 10,
