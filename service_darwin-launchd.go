@@ -20,7 +20,7 @@ import (
 	"github.com/groob/plist"
 )
 
-var logTag = "LAUNCHD-SERVICE"
+var logTag = "LaunchD-SERVICE"
 
 type launchdService struct {
 	config                 Config
@@ -266,30 +266,30 @@ func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
 <plist version='1.0'>
 	<dict>
 		<key>Label</key>
-		<string>{{ .Name }}</string>
+		<string>{{.Name}}</string>
 
 		<key>ProgramArguments</key>
-		<array>{{ range $arg := .Args }}
-			<string>{{ $arg }}</string>{{ end }}
+		<array>{{ range $arg := .Args}}
+			<string>{{ $arg}}</string>{{ end}}
 		</array>
 
 		{{ if eq .StdOut.Disable false}}
 		<key>StandardOutPath</key>
-		<string>{{ .StdOut.Value }}</string>
-		{{ end }}
+		<string>{{.StdOut.Value}}</string>
+		{{ end}}
 
 		{{ if eq .StdErr.Disable false}}
 		<key>StandardErrorPath</key>
-		<string>{{ .StdErr.Value }}</string>
-		{{ end }}
+		<string>{{.StdErr.Value}}</string>
+		{{ end}}
 
 		<key>KeepAlive</key>
-		<{{ .Restart }}/>
+		<{{.Restart}}/>
 		<key>RunAtLoad</key>
 		<true/>
 
 		<key>WorkingDirectory</key>
-		<string>{{ .WorkingDirectory }}</string>
+		<string>{{.WorkingDirectory}}</string>
 	</dict>
 </plist>
 `))

@@ -19,7 +19,7 @@ import (
 	logging "github.com/codemodify/systemkit-logging"
 )
 
-var logTag = "WINDOWS-SERVICE"
+var logTag = "Windows-SERVICE"
 
 type serviceErrorType int
 

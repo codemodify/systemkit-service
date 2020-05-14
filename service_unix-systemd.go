@@ -21,7 +21,7 @@ import (
 	logging "github.com/codemodify/systemkit-logging"
 )
 
-var logTagSystemD = "SYSTEMD-SERVICE"
+var logTagSystemD = "SystemD-SERVICE"
 
 type systemdService struct {
 	config                 Config
@@ -316,25 +316,25 @@ func (thisRef systemdService) fileContentFromConfig() ([]byte, error) {
 
 	fileTemplate := template.Must(template.New("systemdFile").Parse(`
 [Unit]
-After=$DependsOn$
-Description={{ .Description }}
-Documentation={{ .Documentation }}
-StartLimitIntervalSec={{ .DelayBeforeRestart }}
+After=@DependsOn@
+Description={{.Description}}
+Documentation={{.Documentation}}
+StartLimitIntervalSec={{.DelayBeforeRestart}}
 StartLimitBurst=0
 StartLimitAction=none
 
 [Service]
-ExecStart={{ .Executable }}
-WorkingDirectory={{ .WorkingDirectory }}
-Restart=$Restart$
-RestartSec={{ .DelayBeforeRestart }}
+ExecStart={{.Executable}}
+WorkingDirectory={{.WorkingDirectory}}
+Restart=@Restart@
+RestartSec={{.DelayBeforeRestart}}
 Type=simple
 
-{{ if eq .StdOut.Disable false}}StandardOutput={{ .StdOut.Value }}{{ end }}
-{{ if eq .StdErr.Disable false}}StandardError={{ .StdErr.Value }}{{ end }}
+{{ if eq .StdOut.Disable false}}StandardOutput={{.StdOut.Value}}{{ end}}
+{{ if eq .StdErr.Disable false}}StandardError={{.StdErr.Value}}{{ end}}
 
-{{ if .RunAsUser }}User={{ .RunAsUser }}{{ end }}
-{{ if .RunAsGroup }}Group={{ .RunAsGroup }}{{ end }}
+{{ if .RunAsUser}}User={{.RunAsUser}}{{ end}}
+{{ if .RunAsGroup}}Group={{.RunAsGroup}}{{ end}}
 
 [Install]
 WantedBy=multi-user.target
@@ -348,21 +348,21 @@ WantedBy=multi-user.target
 	fileTemplateAsString := buffer.String()
 	fileTemplateAsString = strings.Replace(
 		fileTemplateAsString,
-		"$DependsOn$",
+		"@DependsOn@",
 		strings.Join(thisRef.config.DependsOn, " "),
 		1,
 	)
 	if thisRef.config.Restart {
 		fileTemplateAsString = strings.Replace(
 			fileTemplateAsString,
-			"$Restart$",
+			"@Restart@",
 			"always",
 			1,
 		)
 	} else {
 		fileTemplateAsString = strings.Replace(
 			fileTemplateAsString,
-			"$Restart$",
+			"@Restart@",
 			"on-failure",
 			1,
 		)

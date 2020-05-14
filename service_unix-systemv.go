@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -21,7 +20,7 @@ import (
 	logging "github.com/codemodify/systemkit-logging"
 )
 
-var logTagSystemV = "SYSTEMD-SERVICE"
+var logTagSystemV = "SystemV-SERVICE"
 
 type systemvService struct {
 	config                 Config
@@ -42,10 +41,7 @@ func newServiceFromConfig_SystemV(config Config) Service {
 }
 
 func newServiceFromName_SystemV(name string) (Service, error) {
-	serviceFile := filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", name+".service")
-	if helpersUser.IsRoot() {
-		serviceFile = filepath.Join("/etc/systemd/system", name+".service")
-	}
+	serviceFile := filepath.Join("/etc/init.d/", name)
 
 	fileContent, err := ioutil.ReadFile(serviceFile)
 	if err != nil {
@@ -69,47 +65,25 @@ func newServiceFromTemplate_SystemV(name string, template string) (Service, erro
 	}
 
 	for _, line := range strings.Split(template, "\n") {
-		if strings.Contains(line, "After=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "After=", "", 1))
-			config.DependsOn = strings.Split(cleanLine, " ")
+		if strings.Contains(line, "# Description:") {
+			config.Description = strings.TrimSpace(strings.Replace(line, "# Description:", "", 1))
 
-		} else if strings.Contains(line, "Description=") {
-			config.Description = strings.TrimSpace(strings.Replace(line, "Description=", "", 1))
-
-		} else if strings.Contains(line, "Documentation=") {
-			config.Documentation = strings.TrimSpace(strings.Replace(line, "Documentation=", "", 1))
-
-		} else if strings.Contains(line, "ExecStart=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "ExecStart=", "", 1))
+		} else if strings.Contains(line, "cmd=\"") {
+			cleanLine := strings.TrimSpace(strings.Replace(line, "cmd=\"", "", 1))
 			parts := strings.Split(cleanLine, " ")
 			config.Executable = parts[0]
 			config.Args = parts[1:]
 
-		} else if strings.Contains(line, "WorkingDirectory=") {
-			config.WorkingDirectory = strings.TrimSpace(strings.Replace(line, "WorkingDirectory=", "", 1))
-
-		} else if strings.Contains(line, "Restart=") {
-			config.Restart = true
-
-		} else if strings.Contains(line, "RestartSec=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "RestartSec=", "", 1))
-			config.DelayBeforeRestart, _ = strconv.Atoi(cleanLine)
-
-		} else if strings.Contains(line, "StandardOutput=") {
+		} else if strings.Contains(line, "stdout_log=\"") {
 			config.StdOut.Disable = false
 			config.StdOut.UseDefault = false
-			config.StdOut.Value = strings.TrimSpace(strings.Replace(line, "StandardOutput=", "", 1))
+			config.StdOut.Value = strings.TrimSpace(strings.Replace(line, "stdout_log=\"", "", 1))
 
-		} else if strings.Contains(line, "StandardError=") {
+		} else if strings.Contains(line, "stderr_log=\"") {
 			config.StdErr.Disable = false
 			config.StdErr.UseDefault = false
-			config.StdErr.Value = strings.TrimSpace(strings.Replace(line, "StandardError=", "", 1))
+			config.StdErr.Value = strings.TrimSpace(strings.Replace(line, "stderr_log=\"", "", 1))
 
-		} else if strings.Contains(line, "User=") {
-			config.RunAsUser = strings.TrimSpace(strings.Replace(line, "User=", "", 1))
-
-		} else if strings.Contains(line, "Group=") {
-			config.RunAsGroup = strings.TrimSpace(strings.Replace(line, "Group=", "", 1))
 		}
 	}
 
@@ -141,9 +115,21 @@ func (thisRef systemvService) Install() error {
 
 	logging.Debugf("writing unit to: %s, from %s", thisRef.filePath(), helpersReflect.GetThisFuncName())
 
-	err = ioutil.WriteFile(thisRef.filePath(), fileContent, 0644)
+	err = ioutil.WriteFile(thisRef.filePath(), fileContent, 0755)
 	if err != nil {
 		return err
+	}
+
+	// additional rc.d magic
+	for _, i := range [...]string{"2", "3", "4", "5"} {
+		if err = os.Symlink(thisRef.filePath(), "/etc/rc"+i+".d/S50"+thisRef.config.Name); err != nil {
+			continue
+		}
+	}
+	for _, i := range [...]string{"0", "1", "6"} {
+		if err = os.Symlink(thisRef.filePath(), "/etc/rc"+i+".d/K02"+thisRef.config.Name); err != nil {
+			continue
+		}
 	}
 
 	logging.Debugf("wrote unit: %s, from %s", string(fileContent), helpersReflect.GetThisFuncName())
@@ -175,26 +161,8 @@ func (thisRef systemvService) Uninstall() error {
 
 func (thisRef systemvService) Start() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	output, err := runServiceCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 2.
-	logging.Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runServiceCommand("enable", thisRef.config.Name)
-	if err != nil {
-		if strings.Contains(output, "Failed to enable unit") && strings.Contains(output, "does not exist") {
-			return ErrServiceDoesNotExist
-		}
-
-		return err
-	}
-
-	// 3.
 	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runServiceCommand("start", thisRef.config.Name)
+	output, err := runServiceCommand(thisRef.config.Name, "start")
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
 			return ErrServiceDoesNotExist
@@ -208,49 +176,13 @@ func (thisRef systemvService) Start() error {
 
 func (thisRef systemvService) Stop() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err := runServiceCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 2.
-	logging.Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err := runServiceCommand("stop", thisRef.config.Name)
+	logging.Debugf("stopping service, from %s", helpersReflect.GetThisFuncName())
+	output, err := runServiceCommand(thisRef.config.Name, "stop")
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
 			return ErrServiceDoesNotExist
 		}
 
-		return err
-	}
-
-	// 3.
-	logging.Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runServiceCommand("disable", thisRef.config.Name)
-	if err != nil {
-		logging.Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-
-		if strings.Contains(output, "Failed to disable") && strings.Contains(output, "does not exist") {
-			return ErrServiceDoesNotExist
-		} else if strings.Contains(output, "Removed") {
-			return nil
-		}
-
-		return err
-	}
-
-	// 4.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err = runServiceCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 5.
-	logging.Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
-	_, err = runServiceCommand("reset-failed")
-	if err != nil {
 		return err
 	}
 
@@ -269,39 +201,35 @@ func (thisRef systemvService) Info() Info {
 		FileContent: string(fileContent),
 	}
 
-	output, err := runServiceCommand("status", thisRef.config.Name)
-	if err != nil {
-		result.Error = err
-		return result
-	}
+	// output, err := runServiceCommand("status", thisRef.config.Name)
+	// if err != nil {
+	// 	result.Error = err
+	// 	return result
+	// }
 
-	if strings.Contains(output, "could not be found") {
-		result.Error = ErrServiceDoesNotExist
-		return result
-	}
+	// if strings.Contains(output, "could not be found") {
+	// 	result.Error = ErrServiceDoesNotExist
+	// 	return result
+	// }
 
-	for _, line := range strings.Split(output, "\n") {
-		if strings.Contains(line, "Main PID") {
-			lineParts := strings.Split(strings.TrimSpace(line), " ")
-			if len(lineParts) >= 2 {
-				result.PID, _ = strconv.Atoi(lineParts[2])
-			}
-		} else if strings.Contains(line, "Active") {
-			if strings.Contains(line, "active (running)") {
-				result.IsRunning = true
-			}
-		}
-	}
+	// for _, line := range strings.Split(output, "\n") {
+	// 	if strings.Contains(line, "Main PID") {
+	// 		lineParts := strings.Split(strings.TrimSpace(line), " ")
+	// 		if len(lineParts) >= 2 {
+	// 			result.PID, _ = strconv.Atoi(lineParts[2])
+	// 		}
+	// 	} else if strings.Contains(line, "Active") {
+	// 		if strings.Contains(line, "active (running)") {
+	// 			result.IsRunning = true
+	// 		}
+	// 	}
+	// }
 
 	return result
 }
 
 func (thisRef systemvService) filePath() string {
-	if helpersUser.IsRoot() {
-		return filepath.Join("/etc/systemd/system", thisRef.config.Name+".service")
-	}
-
-	return filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", thisRef.config.Name+".service")
+	return filepath.Join("/etc/init.d/", thisRef.config.Name)
 }
 
 func (thisRef systemvService) fileContentFromConfig() ([]byte, error) {
@@ -314,30 +242,99 @@ func (thisRef systemvService) fileContentFromConfig() ([]byte, error) {
 		)
 	}
 
-	fileTemplate := template.Must(template.New("systemdFile").Parse(`
-[Unit]
-After=$DependsOn$
-Description={{ .Description }}
-Documentation={{ .Documentation }}
-StartLimitIntervalSec={{ .DelayBeforeRestart }}
-StartLimitBurst=0
-StartLimitAction=none
+	fileTemplate := template.Must(template.New("systemvFile").Parse(`#!/bin/sh
+# For RedHat and cousins:
+# chkconfig: - 99 01
+# description: {{.Description}}
+# processname: {{.Executable}}
 
-[Service]
-ExecStart={{ .Executable }}
-WorkingDirectory={{ .WorkingDirectory }}
-Restart=$Restart$
-RestartSec={{ .DelayBeforeRestart }}
-Type=simple
+### BEGIN INIT INFO
+# Provides:          {{.Executable}}
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: {{.Name}}
+# Description:       {{.Description}}
+### END INIT INFO
 
-{{ if eq .StdOut.Disable false}}StandardOutput={{ .StdOut.Value }}{{ end }}
-{{ if eq .StdErr.Disable false}}StandardError={{ .StdErr.Value }}{{ end }}
+cmd="{{.Executable}}"
 
-{{ if .RunAsUser }}User={{ .RunAsUser }}{{ end }}
-{{ if .RunAsGroup }}Group={{ .RunAsGroup }}{{ end }}
+name=$(basename $0)
+pid_file="/var/run/$name.pid"
+stdout_log="/var/log/$name.log"
+stderr_log="/var/log/$name.err"
 
-[Install]
-WantedBy=multi-user.target
+get_pid() {
+    cat "$pid_file"
+}
+
+is_running() {
+    [ -f "$pid_file" ] && ps $(get_pid) > /dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        if is_running; then
+            echo "Already started"
+        else
+            echo "Starting $name"
+            $cmd >> "$stdout_log" 2>> "$stderr_log" &
+            echo $! > "$pid_file"
+            if ! is_running; then
+                echo "Unable to start, see $stdout_log and $stderr_log"
+                exit 1
+            fi
+        fi
+    ;;
+    stop)
+        if is_running; then
+            echo -n "Stopping $name.."
+            kill $(get_pid)
+            for i in {1..10}
+            do
+                if ! is_running; then
+                    break
+                fi
+                echo -n "."
+                sleep 1
+            done
+            echo
+            if is_running; then
+                echo "Not stopped; may still be shutting down or shutdown may have failed"
+                exit 1
+            else
+                echo "Stopped"
+                if [ -f "$pid_file" ]; then
+                    rm "$pid_file"
+                fi
+            fi
+        else
+            echo "Not running"
+        fi
+    ;;
+    restart)
+        $0 stop
+        if is_running; then
+            echo "Unable to stop, will not attempt to start"
+            exit 1
+        fi
+        $0 start
+    ;;
+    status)
+        if is_running; then
+            echo "Running"
+        else
+            echo "Stopped"
+            exit 1
+        fi
+    ;;
+    *)
+    echo "Usage: $0 {start|stop|restart|status}"
+    exit 1
+    ;;
+esac
+exit 0
 `))
 
 	var buffer bytes.Buffer
@@ -345,30 +342,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	fileTemplateAsString := buffer.String()
-	fileTemplateAsString = strings.Replace(
-		fileTemplateAsString,
-		"$DependsOn$",
-		strings.Join(thisRef.config.DependsOn, " "),
-		1,
-	)
-	if thisRef.config.Restart {
-		fileTemplateAsString = strings.Replace(
-			fileTemplateAsString,
-			"$Restart$",
-			"always",
-			1,
-		)
-	} else {
-		fileTemplateAsString = strings.Replace(
-			fileTemplateAsString,
-			"$Restart$",
-			"on-failure",
-			1,
-		)
-	}
-
-	return []byte(fileTemplateAsString), nil
+	return buffer.Bytes(), nil
 }
 
 func (thisRef systemvService) fileContentFromDisk() ([]byte, error) {
@@ -380,15 +354,15 @@ func runServiceCommand(args ...string) (string, error) {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTagSystemV, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE: service %s, from %s", logTagSystemV, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
-	output, err := helpersExec.ExecWithArgs("systemctl", args...)
+	output, err := helpersExec.ExecWithArgs("service", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTagSystemV, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE-OUT: output: %s, error: %s, from %s", logTagSystemV, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }

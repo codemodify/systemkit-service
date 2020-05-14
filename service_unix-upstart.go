@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -21,7 +20,7 @@ import (
 	logging "github.com/codemodify/systemkit-logging"
 )
 
-var logTagUpstart = "SYSTEMD-SERVICE"
+var logTagUpstart = "UpStart-SERVICE"
 
 type upstartService struct {
 	config                 Config
@@ -42,10 +41,7 @@ func newServiceFromConfig_Upstart(config Config) Service {
 }
 
 func newServiceFromName_Upstart(name string) (Service, error) {
-	serviceFile := filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", name+".service")
-	if helpersUser.IsRoot() {
-		serviceFile = filepath.Join("/etc/systemd/system", name+".service")
-	}
+	serviceFile := filepath.Join("/etc/init/", name+".conf")
 
 	fileContent, err := ioutil.ReadFile(serviceFile)
 	if err != nil {
@@ -68,48 +64,16 @@ func newServiceFromTemplate_Upstart(name string, template string) (Service, erro
 		},
 	}
 
-	for _, line := range strings.Split(template, "\n") {
-		if strings.Contains(line, "After=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "After=", "", 1))
-			config.DependsOn = strings.Split(cleanLine, " ")
+	for lineIndex, line := range strings.Split(template, "\n") {
+		if strings.Contains(line, "# ") && lineIndex == 0 {
+			config.Description = strings.TrimSpace(strings.Replace(line, "# ", "", 1))
 
-		} else if strings.Contains(line, "Description=") {
-			config.Description = strings.TrimSpace(strings.Replace(line, "Description=", "", 1))
-
-		} else if strings.Contains(line, "Documentation=") {
-			config.Documentation = strings.TrimSpace(strings.Replace(line, "Documentation=", "", 1))
-
-		} else if strings.Contains(line, "ExecStart=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "ExecStart=", "", 1))
+		} else if strings.Contains(line, "exec ") {
+			cleanLine := strings.TrimSpace(strings.Replace(line, "exec ", "", 1))
 			parts := strings.Split(cleanLine, " ")
 			config.Executable = parts[0]
 			config.Args = parts[1:]
 
-		} else if strings.Contains(line, "WorkingDirectory=") {
-			config.WorkingDirectory = strings.TrimSpace(strings.Replace(line, "WorkingDirectory=", "", 1))
-
-		} else if strings.Contains(line, "Restart=") {
-			config.Restart = true
-
-		} else if strings.Contains(line, "RestartSec=") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "RestartSec=", "", 1))
-			config.DelayBeforeRestart, _ = strconv.Atoi(cleanLine)
-
-		} else if strings.Contains(line, "StandardOutput=") {
-			config.StdOut.Disable = false
-			config.StdOut.UseDefault = false
-			config.StdOut.Value = strings.TrimSpace(strings.Replace(line, "StandardOutput=", "", 1))
-
-		} else if strings.Contains(line, "StandardError=") {
-			config.StdErr.Disable = false
-			config.StdErr.UseDefault = false
-			config.StdErr.Value = strings.TrimSpace(strings.Replace(line, "StandardError=", "", 1))
-
-		} else if strings.Contains(line, "User=") {
-			config.RunAsUser = strings.TrimSpace(strings.Replace(line, "User=", "", 1))
-
-		} else if strings.Contains(line, "Group=") {
-			config.RunAsGroup = strings.TrimSpace(strings.Replace(line, "Group=", "", 1))
 		}
 	}
 
@@ -175,26 +139,8 @@ func (thisRef upstartService) Uninstall() error {
 
 func (thisRef upstartService) Start() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	output, err := runInitctlCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 2.
-	logging.Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runInitctlCommand("enable", thisRef.config.Name)
-	if err != nil {
-		if strings.Contains(output, "Failed to enable unit") && strings.Contains(output, "does not exist") {
-			return ErrServiceDoesNotExist
-		}
-
-		return err
-	}
-
-	// 3.
 	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runInitctlCommand("start", thisRef.config.Name)
+	output, err := runInitctlCommand("start", thisRef.config.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
 			return ErrServiceDoesNotExist
@@ -208,49 +154,13 @@ func (thisRef upstartService) Start() error {
 
 func (thisRef upstartService) Stop() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err := runInitctlCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 2.
-	logging.Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("stopping service, from %s", helpersReflect.GetThisFuncName())
 	output, err := runInitctlCommand("stop", thisRef.config.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
 			return ErrServiceDoesNotExist
 		}
 
-		return err
-	}
-
-	// 3.
-	logging.Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err = runInitctlCommand("disable", thisRef.config.Name)
-	if err != nil {
-		logging.Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-
-		if strings.Contains(output, "Failed to disable") && strings.Contains(output, "does not exist") {
-			return ErrServiceDoesNotExist
-		} else if strings.Contains(output, "Removed") {
-			return nil
-		}
-
-		return err
-	}
-
-	// 4.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
-	_, err = runInitctlCommand("daemon-reload")
-	if err != nil {
-		return err
-	}
-
-	// 5.
-	logging.Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
-	_, err = runInitctlCommand("reset-failed")
-	if err != nil {
 		return err
 	}
 
@@ -269,39 +179,35 @@ func (thisRef upstartService) Info() Info {
 		FileContent: string(fileContent),
 	}
 
-	output, err := runInitctlCommand("status", thisRef.config.Name)
-	if err != nil {
-		result.Error = err
-		return result
-	}
+	// output, err := runInitctlCommand("status", thisRef.config.Name)
+	// if err != nil {
+	// 	result.Error = err
+	// 	return result
+	// }
 
-	if strings.Contains(output, "could not be found") {
-		result.Error = ErrServiceDoesNotExist
-		return result
-	}
+	// if strings.Contains(output, "could not be found") {
+	// 	result.Error = ErrServiceDoesNotExist
+	// 	return result
+	// }
 
-	for _, line := range strings.Split(output, "\n") {
-		if strings.Contains(line, "Main PID") {
-			lineParts := strings.Split(strings.TrimSpace(line), " ")
-			if len(lineParts) >= 2 {
-				result.PID, _ = strconv.Atoi(lineParts[2])
-			}
-		} else if strings.Contains(line, "Active") {
-			if strings.Contains(line, "active (running)") {
-				result.IsRunning = true
-			}
-		}
-	}
+	// for _, line := range strings.Split(output, "\n") {
+	// 	if strings.Contains(line, "Main PID") {
+	// 		lineParts := strings.Split(strings.TrimSpace(line), " ")
+	// 		if len(lineParts) >= 2 {
+	// 			result.PID, _ = strconv.Atoi(lineParts[2])
+	// 		}
+	// 	} else if strings.Contains(line, "Active") {
+	// 		if strings.Contains(line, "active (running)") {
+	// 			result.IsRunning = true
+	// 		}
+	// 	}
+	// }
 
 	return result
 }
 
 func (thisRef upstartService) filePath() string {
-	if helpersUser.IsRoot() {
-		return filepath.Join("/etc/systemd/system", thisRef.config.Name+".service")
-	}
-
-	return filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", thisRef.config.Name+".service")
+	return filepath.Join("/etc/init/", thisRef.config.Name+".conf")
 }
 
 func (thisRef upstartService) fileContentFromConfig() ([]byte, error) {
@@ -314,30 +220,28 @@ func (thisRef upstartService) fileContentFromConfig() ([]byte, error) {
 		)
 	}
 
-	fileTemplate := template.Must(template.New("systemdFile").Parse(`
-[Unit]
-After=$DependsOn$
-Description={{ .Description }}
-Documentation={{ .Documentation }}
-StartLimitIntervalSec={{ .DelayBeforeRestart }}
-StartLimitBurst=0
-StartLimitAction=none
+	fileTemplate := template.Must(template.New("upstartFile").Parse(`# {{.Description}}
 
-[Service]
-ExecStart={{ .Executable }}
-WorkingDirectory={{ .WorkingDirectory }}
-Restart=$Restart$
-RestartSec={{ .DelayBeforeRestart }}
-Type=simple
+description     "{{.Name}}"
 
-{{ if eq .StdOut.Disable false}}StandardOutput={{ .StdOut.Value }}{{ end }}
-{{ if eq .StdErr.Disable false}}StandardError={{ .StdErr.Value }}{{ end }}
+start on filesystem or runlevel [2345]
+stop on runlevel [!2345]
 
-{{ if .RunAsUser }}User={{ .RunAsUser }}{{ end }}
-{{ if .RunAsGroup }}Group={{ .RunAsGroup }}{{ end }}
+#setuid username
 
-[Install]
-WantedBy=multi-user.target
+# stop the respawn is process fails to start 5 times within 5 minutes
+respawn
+respawn limit 5 300
+umask 022
+
+console none
+
+pre-start script
+    test -x {{.Executable}} || { stop; exit 0; }
+end script
+
+# Start
+exec {{.Executable}}
 `))
 
 	var buffer bytes.Buffer
@@ -345,30 +249,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	fileTemplateAsString := buffer.String()
-	fileTemplateAsString = strings.Replace(
-		fileTemplateAsString,
-		"$DependsOn$",
-		strings.Join(thisRef.config.DependsOn, " "),
-		1,
-	)
-	if thisRef.config.Restart {
-		fileTemplateAsString = strings.Replace(
-			fileTemplateAsString,
-			"$Restart$",
-			"always",
-			1,
-		)
-	} else {
-		fileTemplateAsString = strings.Replace(
-			fileTemplateAsString,
-			"$Restart$",
-			"on-failure",
-			1,
-		)
-	}
-
-	return []byte(fileTemplateAsString), nil
+	return buffer.Bytes(), nil
 }
 
 func (thisRef upstartService) fileContentFromDisk() ([]byte, error) {
@@ -380,15 +261,15 @@ func runInitctlCommand(args ...string) (string, error) {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTagUpstart, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-INITCTL: initctl %s, from %s", logTagUpstart, strings.Join(args, " "), helpersReflect.GetThisFuncName())
 
-	output, err := helpersExec.ExecWithArgs("systemctl", args...)
+	output, err := helpersExec.ExecWithArgs("initctl", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTagUpstart, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-INITCTL-OUT: output: %s, error: %s, from %s", logTagUpstart, output, errAsString, helpersReflect.GetThisFuncName())
 
 	return output, err
 }
