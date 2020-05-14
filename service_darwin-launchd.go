@@ -250,7 +250,7 @@ func (thisRef launchdService) filePath() string {
 }
 
 func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
-	// on macOS set member config.Args to include executable
+	// for LaunchD move everything into config.Args
 	args := []string{thisRef.config.Executable}
 
 	if len(thisRef.config.Args) > 0 {
@@ -260,7 +260,7 @@ func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
 	thisRef.config.Args = args
 
 	// run the template
-	plistTemplate := template.Must(template.New("launchdFile").Parse(`
+	fileTemplate := template.Must(template.New("launchdFile").Parse(`
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\" >
 <plist version='1.0'>
@@ -294,12 +294,12 @@ func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
 </plist>
 `))
 
-	var plistTemplateBytes bytes.Buffer
-	if err := plistTemplate.Execute(&plistTemplateBytes, thisRef.config); err != nil {
+	var buffer bytes.Buffer
+	if err := fileTemplate.Execute(&buffer, thisRef.config); err != nil {
 		return nil, err
 	}
 
-	return plistTemplateBytes.Bytes(), nil
+	return buffer.Bytes(), nil
 }
 
 func (thisRef launchdService) fileContentFromDisk() ([]byte, error) {

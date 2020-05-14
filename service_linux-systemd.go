@@ -297,6 +297,7 @@ func (thisRef systemdService) filePath() string {
 }
 
 func (thisRef systemdService) fileContentFromConfig() ([]byte, error) {
+	// for SystemD move everything into config.Executable
 	if len(thisRef.config.Args) > 0 {
 		thisRef.config.Executable = fmt.Sprintf(
 			"%s %s",
