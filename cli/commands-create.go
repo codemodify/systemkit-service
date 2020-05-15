@@ -29,6 +29,7 @@ func init() {
 			}
 
 			flags, ok := command.Flags.(createCommandFlags)
+			if !ok {
 				opStatus.Status = OpStatusError
 				opStatus.Details = append(opStatus.Details, "Can't fetch flags values")
 				logOpearationStatus(opStatus)
