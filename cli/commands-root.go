@@ -19,5 +19,14 @@ var rootCommand = &clicmdflags.Command{
 		filepath.Base(os.Args[0]) + " -json",
 		filepath.Base(os.Args[0]) + " -json true",
 	},
-	Flags: &rootCommandFlags{},
+	Flags: rootCommandFlags{},
+}
+
+func globalFlags() rootCommandFlags {
+	flags, ok := rootCommand.Flags.(rootCommandFlags)
+	if !ok {
+		return rootCommandFlags{}
+	}
+
+	return flags
 }

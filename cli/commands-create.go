@@ -23,7 +23,17 @@ func init() {
 		},
 		Flags: createCommandFlags{},
 		Handler: func(command *clicmdflags.Command) {
-			flags := command.Flags.(createCommandFlags)
+			opStatus := OperationStatus{
+				Status:  OpStatusSuccess,
+				Details: []string{},
+			}
+
+			flags, ok := command.Flags.(createCommandFlags)
+				opStatus.Status = OpStatusError
+				opStatus.Details = append(opStatus.Details, "Can't fetch flags values")
+				logOpearationStatus(opStatus)
+				return
+			}
 
 			s := service.NewServiceFromConfig(service.Config{
 				Name:        flags.Name,
@@ -33,6 +43,15 @@ func init() {
 			})
 
 			err := s.Install()
+			if err != nil {
+				opStatus.Status = OpStatusError
+				opStatus.Details = append(opStatus.Details, err.Error())
+				logOpearationStatus(opStatus)
+				return
+			}
+
+			opStatus.Details = append(opStatus.Details, "OK")
+			logOpearationStatus(opStatus)
 		},
 	})
 }
