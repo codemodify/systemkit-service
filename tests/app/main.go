@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	service := tests.CreateRemoteitService()
+	service := tests.CreateRandomService()
 
 	// err := service.Stop()
 	// if helpersErrors.Is(err, Service.ErrServiceDoesNotExist) {

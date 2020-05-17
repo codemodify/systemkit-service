@@ -3,13 +3,11 @@
 package service
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"text/template"
 
 	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
@@ -17,37 +15,38 @@ import (
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/groob/plist"
+	"github.com/codemodify/systemkit-service/encoders"
+	"github.com/codemodify/systemkit-service/spec"
 )
 
 var logTag = "LaunchD-SERVICE"
 
 type launchdService struct {
-	config                 Config
+	serviceSpec            spec.SERVICE
 	useConfigAsFileContent bool
 	fileContentTemplate    string
 }
 
-func newServiceFromConfig(config Config) Service {
+func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 	// override some values - platform specific
 	// https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
-	logDir := filepath.Join(helpersUser.HomeDir(""), "Library/Logs", config.Name)
+	logDir := filepath.Join(helpersUser.HomeDir(""), "Library/Logs", serviceSpec.Name)
 	if helpersUser.IsRoot() {
-		logDir = filepath.Join("/Library/Logs", config.Name)
+		logDir = filepath.Join("/Library/Logs", serviceSpec.Name)
 	}
 
-	if config.StdOut.UseDefault {
-		config.StdOut.Value = filepath.Join(logDir, config.Name+".stdout.log")
+	if serviceSpec.Logging.StdOut.UseDefault {
+		serviceSpec.Logging.StdOut.Value = filepath.Join(logDir, serviceSpec.Name+".stdout.log")
 	}
 
-	if config.StdErr.UseDefault {
-		config.StdErr.Value = filepath.Join(logDir, config.Name+".stderr.log")
+	if serviceSpec.Logging.StdErr.UseDefault {
+		serviceSpec.Logging.StdErr.Value = filepath.Join(logDir, serviceSpec.Name+".stderr.log")
 	}
 
-	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: serviceSpec object: %s, from %s", logTag, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
 
 	launchdService := &launchdService{
-		config:                 config,
+		serviceSpec:            serviceSpec,
 		useConfigAsFileContent: true,
 	}
 
@@ -65,54 +64,14 @@ func newServiceFromName(name string) (Service, error) {
 		return nil, ErrServiceDoesNotExist
 	}
 
-	return newServiceFromTemplate(name, string(fileContent))
+	return newServiceFromPlatformTemplate(name, string(fileContent))
 }
 
-func newServiceFromTemplate(name string, template string) (Service, error) {
+func newServiceFromPlatformTemplate(name string, template string) (Service, error) {
 	logging.Debugf("%s: template: %s, from %s", logTag, template, helpersReflect.GetThisFuncName())
 
-	config := Config{
-		Name: name,
-		StdOut: LogConfig{
-			Disable: true,
-		},
-		StdErr: LogConfig{
-			Disable: true,
-		},
-	}
-
-	var plistData struct {
-		Label             *string  `plist:"Label"`
-		ProgramArguments  []string `plist:"ProgramArguments"`
-		StandardOutPath   *string  `plist:"StandardOutPath"`
-		StandardErrorPath *string  `plist:"StandardErrorPath"`
-		KeepAlive         *bool    `plist:"KeepAlive"`
-		WorkingDirectory  *string  `plist:"WorkingDirectory"`
-	}
-
-	if err := plist.NewXMLDecoder(strings.NewReader(template)).Decode(&plistData); err != nil {
-		logging.Errorf("%s: error parsing PLIST: %s, from %s", logTag, err.Error(), helpersReflect.GetThisFuncName())
-	} else {
-		if len(plistData.ProgramArguments) > 0 {
-			config.Executable = plistData.ProgramArguments[0]
-			config.Args = plistData.ProgramArguments[1:]
-		}
-		if plistData.StandardOutPath != nil {
-			config.StdOut.Disable = false
-			config.StdOut.UseDefault = false
-			config.StdOut.Value = *plistData.StandardOutPath
-		}
-		if plistData.StandardErrorPath != nil {
-			config.StdErr.Disable = false
-			config.StdErr.UseDefault = false
-			config.StdErr.Value = *plistData.StandardErrorPath
-		}
-		config.Restart = *plistData.KeepAlive
-		config.WorkingDirectory = *plistData.WorkingDirectory
-	}
-
 	return &launchdService{
-		config:                 config,
+		serviceSpec:            encoders.LaunchDToSERVICE(template),
 		useConfigAsFileContent: false,
 		fileContentTemplate:    template,
 	}, nil
@@ -127,7 +86,7 @@ func (thisRef launchdService) Install() error {
 
 	// 2.
 	logging.Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
-	fileContent, err := thisRef.fileContentFromConfig()
+	fileContent, err := encoders.SERVICEToLaunchD(thisRef.serviceSpec)
 	if err != nil {
 		return err
 	}
@@ -164,7 +123,7 @@ func (thisRef launchdService) Uninstall() error {
 	// INFO: ignore the return value as is it is barely defined by the docs
 	// what the expected behavior would be. The previous stop and remove the "plist" file
 	// will uninstall the service.
-	runLaunchCtlCommand("remove", thisRef.config.Name)
+	runLaunchCtlCommand("remove", thisRef.serviceSpec.Name)
 	return nil
 }
 
@@ -183,12 +142,12 @@ func (thisRef launchdService) Start() error {
 		return nil
 	}
 
-	runLaunchCtlCommand("start", thisRef.config.Name)
+	runLaunchCtlCommand("start", thisRef.serviceSpec.Name)
 	return nil
 }
 
 func (thisRef launchdService) Stop() error {
-	runLaunchCtlCommand("stop", thisRef.config.Name)
+	runLaunchCtlCommand("stop", thisRef.serviceSpec.Name)
 	output, err := runLaunchCtlCommand("unload", thisRef.filePath())
 	if strings.Contains(output, "Could not find specified service") {
 		return ErrServiceDoesNotExist
@@ -198,11 +157,11 @@ func (thisRef launchdService) Stop() error {
 }
 
 func (thisRef launchdService) Info() Info {
-	fileContent, fileContentErr := thisRef.fileContentFromDisk()
+	fileContent, fileContentErr := ioutil.ReadFile(thisRef.filePath())
 
 	result := Info{
 		Error:       nil,
-		Config:      thisRef.config,
+		Service:     thisRef.serviceSpec,
 		IsRunning:   false,
 		PID:         -1,
 		FilePath:    thisRef.filePath(),
@@ -224,7 +183,7 @@ func (thisRef launchdService) Info() Info {
 	for _, line := range lines {
 		chunks := strings.Split(line, "\t")
 
-		if chunks[2] == thisRef.config.Name {
+		if chunks[2] == thisRef.serviceSpec.Name {
 			if chunks[0] != "-" {
 				pid, _ := strconv.Atoi(chunks[0])
 				result.PID = pid
@@ -243,67 +202,10 @@ func (thisRef launchdService) Info() Info {
 
 func (thisRef launchdService) filePath() string {
 	if helpersUser.IsRoot() {
-		return filepath.Join("/Library/LaunchDaemons", thisRef.config.Name+".plist")
+		return filepath.Join("/Library/LaunchDaemons", thisRef.serviceSpec.Name+".plist")
 	}
 
-	return filepath.Join(helpersUser.HomeDir(""), "Library/LaunchAgents", thisRef.config.Name+".plist")
-}
-
-func (thisRef launchdService) fileContentFromConfig() ([]byte, error) {
-	// for LaunchD move everything into config.Args
-	args := []string{thisRef.config.Executable}
-
-	if len(thisRef.config.Args) > 0 {
-		args = append(args, thisRef.config.Args...)
-	}
-
-	thisRef.config.Args = args
-
-	// run the template
-	fileTemplate := template.Must(template.New("launchdFile").Parse(`
-<?xml version='1.0' encoding='UTF-8'?>
-<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\" >
-<plist version='1.0'>
-	<dict>
-		<key>Label</key>
-		<string>{{.Name}}</string>
-
-		<key>ProgramArguments</key>
-		<array>{{ range $arg := .Args}}
-			<string>{{ $arg}}</string>{{ end}}
-		</array>
-
-		{{ if eq .StdOut.Disable false}}
-		<key>StandardOutPath</key>
-		<string>{{.StdOut.Value}}</string>
-		{{ end}}
-
-		{{ if eq .StdErr.Disable false}}
-		<key>StandardErrorPath</key>
-		<string>{{.StdErr.Value}}</string>
-		{{ end}}
-
-		<key>KeepAlive</key>
-		<{{.Restart}}/>
-		<key>RunAtLoad</key>
-		<true/>
-
-		<key>WorkingDirectory</key>
-		<string>{{.WorkingDirectory}}</string>
-	</dict>
-</plist>
-`))
-
-	var buffer bytes.Buffer
-	if err := fileTemplate.Execute(&buffer, thisRef.config); err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func (thisRef launchdService) fileContentFromDisk() ([]byte, error) {
-	return ioutil.ReadFile(thisRef.filePath())
+	return filepath.Join(helpersUser.HomeDir(""), "Library/LaunchAgents", thisRef.serviceSpec.Name+".plist")
 }
 
 func runLaunchCtlCommand(args ...string) (string, error) {

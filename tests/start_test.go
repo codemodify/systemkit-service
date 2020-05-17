@@ -5,7 +5,7 @@ import (
 )
 
 func Test_start(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	err := service.Start()
 	if err != nil {
@@ -14,7 +14,7 @@ func Test_start(t *testing.T) {
 }
 
 func Test_start_non_existing(t *testing.T) {
-	service := createRandomService()
+	service := CreateRandomService()
 
 	err := service.Start()
 	if err != nil {

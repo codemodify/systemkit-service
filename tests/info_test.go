@@ -8,7 +8,7 @@ import (
 )
 
 func Test_status(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	info := service.Info()
 	if info.Error != nil {
@@ -19,7 +19,7 @@ func Test_status(t *testing.T) {
 }
 
 func Test_status_non_existing(t *testing.T) {
-	service := createRandomService()
+	service := CreateRandomService()
 
 	info := service.Info()
 	if info.Error != nil {

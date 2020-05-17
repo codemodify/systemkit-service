@@ -1,0 +1,63 @@
+{
+	"name": "test-service",
+	"description": "Test Service",
+	"documentation": "http://test-service.com",
+	"executable": "/bin/sleep",
+	"args": [
+		"40"
+	],
+	"workingDirectory": "/tmp",
+	"environment": {
+		"API_URL": "https://api.test-service.com"
+	},
+	"dependsOn": [
+		"network"
+	],
+	"dependsOnOverrides": {
+		"init_rc.d": {
+			"remove": [
+				"*"
+			],
+			"add": [
+				"bumblebee",
+				"mumbled"
+			]
+		},
+		"init_systemd": {
+			"add": [
+				"printer"
+			]
+		},
+		"os_freebsd": {
+			"add": [
+				"linux"
+			]
+		},
+		"os_linux": {
+			"add": [
+				"bluetooth"
+			]
+		}
+	},
+	"start": {
+		"atBoot": true,
+		"restart": true,
+		"restartTimeout": 10
+	},
+	"logging": {
+		"stdout": {
+			"disabled": false,
+			"useDefault": false,
+			"value": "/var/log/test-service-stdout.log"
+		},
+		"stderr": {
+			"disabled": false,
+			"useDefault": false,
+			"value": "/var/log/test-service-stderr.log"
+		}
+	},
+	"credentials": {
+		"user": "user",
+		"group": "group"
+	}
+}

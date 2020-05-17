@@ -8,7 +8,7 @@ import (
 )
 
 func Test_stop(t *testing.T) {
-	systemService := createService()
+	systemService := CreateService()
 
 	err := systemService.Stop()
 	if helpersErrors.Is(err, service.ErrServiceDoesNotExist) {
@@ -19,7 +19,7 @@ func Test_stop(t *testing.T) {
 }
 
 func Test_stop_non_existing(t *testing.T) {
-	systemService := createRandomService()
+	systemService := CreateRandomService()
 
 	err := systemService.Stop()
 	if helpersErrors.Is(err, service.ErrServiceDoesNotExist) {

@@ -5,7 +5,7 @@ import (
 )
 
 func Test_uninstall(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	err := service.Uninstall()
 	if err != nil {
@@ -14,7 +14,7 @@ func Test_uninstall(t *testing.T) {
 }
 
 func Test_uninstall_non_existing(t *testing.T) {
-	service := createRandomService()
+	service := CreateRandomService()
 
 	err := service.Uninstall()
 	if err != nil {

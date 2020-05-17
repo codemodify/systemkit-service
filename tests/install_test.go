@@ -5,7 +5,7 @@ import (
 )
 
 func Test_install(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	err := service.Install()
 	if err != nil {
@@ -14,7 +14,7 @@ func Test_install(t *testing.T) {
 }
 
 func Test_install_and_start(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	err := service.Install()
 	if err != nil {

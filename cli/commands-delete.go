@@ -5,25 +5,25 @@ import (
 	service "github.com/codemodify/systemkit-service"
 )
 
-type removeCommandFlags struct {
+type deleteCommandFlags struct {
 	Name string `flagName:"name" flagRequired:"true" flagDescription:"Service name"`
 }
 
 func init() {
 	rootCommand.AddCommand(&clicmdflags.Command{
-		Name:        "remove",
-		Description: "Remove a system service",
+		Name:        "delete",
+		Description: "Delete a system service",
 		Examples: []string{
 			"-name test-service",
 		},
-		Flags: removeCommandFlags{},
+		Flags: deleteCommandFlags{},
 		Handler: func(command *clicmdflags.Command) {
 			opStatus := OperationStatus{
 				Status:  OpStatusSuccess,
 				Details: []string{},
 			}
 
-			flags, ok := command.Flags.(removeCommandFlags)
+			flags, ok := command.Flags.(deleteCommandFlags)
 			if !ok {
 				opStatus.Status = OpStatusError
 				opStatus.Details = append(opStatus.Details, "Can't fetch flags values")

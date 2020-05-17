@@ -1,16 +1,12 @@
-// +build !windows
-// +build !darwin
+// +build linux
 
 package service
 
 import (
-	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
@@ -18,24 +14,23 @@ import (
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
+	"github.com/codemodify/systemkit-service/encoders"
+	"github.com/codemodify/systemkit-service/spec"
 )
 
 var logTagUpstart = "UpStart-SERVICE"
 
 type upstartService struct {
-	config                 Config
+	serviceSpec            spec.SERVICE
 	useConfigAsFileContent bool
 	fileContentTemplate    string
 }
 
-func newServiceFromConfig_Upstart(config Config) Service {
-
-	config.DependsOn = append(config.DependsOn, "network.target")
-
-	logging.Debugf("%s: config object: %s, from %s", logTagUpstart, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
+func newServiceFromSERVICE_Upstart(serviceSpec spec.SERVICE) Service {
+	logging.Debugf("%s: serviceSpec object: %s, from %s", logTagUpstart, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
 
 	return &upstartService{
-		config:                 config,
+		serviceSpec:            serviceSpec,
 		useConfigAsFileContent: true,
 	}
 }
@@ -48,37 +43,16 @@ func newServiceFromName_Upstart(name string) (Service, error) {
 		return nil, ErrServiceDoesNotExist
 	}
 
-	return newServiceFromTemplate_Upstart(name, string(fileContent))
+	return newServiceFromPlatformTemplate_Upstart(name, string(fileContent))
 }
 
-func newServiceFromTemplate_Upstart(name string, template string) (Service, error) {
+func newServiceFromPlatformTemplate_Upstart(name string, template string) (Service, error) {
 	logging.Debugf("%s: template: %s, from %s", logTagUpstart, template, helpersReflect.GetThisFuncName())
 
-	config := Config{
-		Name: name,
-		StdOut: LogConfig{
-			Disable: true,
-		},
-		StdErr: LogConfig{
-			Disable: true,
-		},
-	}
-
-	for lineIndex, line := range strings.Split(template, "\n") {
-		if strings.Contains(line, "# ") && lineIndex == 0 {
-			config.Description = strings.TrimSpace(strings.Replace(line, "# ", "", 1))
-
-		} else if strings.Contains(line, "exec ") {
-			cleanLine := strings.TrimSpace(strings.Replace(line, "exec ", "", 1))
-			parts := strings.Split(cleanLine, " ")
-			config.Executable = parts[0]
-			config.Args = parts[1:]
-
-		}
-	}
+	serviceSpec := encoders.UpStartToSERVICE(template)
 
 	return &upstartService{
-		config:                 config,
+		serviceSpec:            serviceSpec,
 		useConfigAsFileContent: false,
 		fileContentTemplate:    template,
 	}, nil
@@ -94,18 +68,15 @@ func (thisRef upstartService) Install() error {
 	// 2.
 	logging.Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
 
-	fileContent, err := thisRef.fileContentFromConfig()
-	if err != nil {
-		return err
-	}
+	fileContent := encoders.SERVICEToUpStart(thisRef.serviceSpec)
 
 	if !thisRef.useConfigAsFileContent {
-		fileContent = []byte(thisRef.fileContentTemplate)
+		fileContent = thisRef.fileContentTemplate
 	}
 
 	logging.Debugf("writing unit to: %s, from %s", thisRef.filePath(), helpersReflect.GetThisFuncName())
 
-	err = ioutil.WriteFile(thisRef.filePath(), fileContent, 0644)
+	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0644)
 	if err != nil {
 		return err
 	}
@@ -117,7 +88,7 @@ func (thisRef upstartService) Install() error {
 
 func (thisRef upstartService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagUpstart, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagUpstart, thisRef.serviceSpec.Name, helpersReflect.GetThisFuncName())
 
 	// 2.
 	err := thisRef.Stop()
@@ -140,7 +111,7 @@ func (thisRef upstartService) Uninstall() error {
 func (thisRef upstartService) Start() error {
 	// 1.
 	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
-	output, err := runInitctlCommand("start", thisRef.config.Name)
+	output, err := runInitctlCommand("start", thisRef.serviceSpec.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
 			return ErrServiceDoesNotExist
@@ -155,7 +126,7 @@ func (thisRef upstartService) Start() error {
 func (thisRef upstartService) Stop() error {
 	// 1.
 	logging.Debugf("stopping service, from %s", helpersReflect.GetThisFuncName())
-	output, err := runInitctlCommand("stop", thisRef.config.Name)
+	output, err := runInitctlCommand("stop", thisRef.serviceSpec.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
 			return ErrServiceDoesNotExist
@@ -168,18 +139,18 @@ func (thisRef upstartService) Stop() error {
 }
 
 func (thisRef upstartService) Info() Info {
-	fileContent, _ := thisRef.fileContentFromDisk()
+	fileContent, _ := ioutil.ReadFile(thisRef.filePath())
 
 	result := Info{
 		Error:       nil,
-		Config:      thisRef.config,
+		Service:     thisRef.serviceSpec,
 		IsRunning:   false,
 		PID:         -1,
 		FilePath:    thisRef.filePath(),
 		FileContent: string(fileContent),
 	}
 
-	// output, err := runInitctlCommand("status", thisRef.config.Name)
+	// output, err := runInitctlCommand("status", thisRef.serviceSpec.Name)
 	// if err != nil {
 	// 	result.Error = err
 	// 	return result
@@ -207,53 +178,7 @@ func (thisRef upstartService) Info() Info {
 }
 
 func (thisRef upstartService) filePath() string {
-	return filepath.Join("/etc/init/", thisRef.config.Name+".conf")
-}
-
-func (thisRef upstartService) fileContentFromConfig() ([]byte, error) {
-	// for SystemD move everything into config.Executable
-	if len(thisRef.config.Args) > 0 {
-		thisRef.config.Executable = fmt.Sprintf(
-			"%s %s",
-			thisRef.config.Executable,
-			strings.Join(thisRef.config.Args, " "),
-		)
-	}
-
-	fileTemplate := template.Must(template.New("upstartFile").Parse(`# {{.Description}}
-
-description     "{{.Name}}"
-
-start on filesystem or runlevel [2345]
-stop on runlevel [!2345]
-
-#setuid username
-
-# stop the respawn is process fails to start 5 times within 5 minutes
-respawn
-respawn limit 5 300
-umask 022
-
-console none
-
-pre-start script
-    test -x {{.Executable}} || { stop; exit 0; }
-end script
-
-# Start
-exec {{.Executable}}
-`))
-
-	var buffer bytes.Buffer
-	if err := fileTemplate.Execute(&buffer, thisRef.config); err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-func (thisRef upstartService) fileContentFromDisk() ([]byte, error) {
-	return ioutil.ReadFile(thisRef.filePath())
+	return filepath.Join("/etc/init/", thisRef.serviceSpec.Name+".conf")
 }
 
 func runInitctlCommand(args ...string) (string, error) {

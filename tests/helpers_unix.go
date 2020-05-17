@@ -7,56 +7,45 @@ import (
 
 	helpersGuid "github.com/codemodify/systemkit-helpers-guid"
 	service "github.com/codemodify/systemkit-service"
+	"github.com/codemodify/systemkit-service/spec"
 )
 
-func createService() service.Service {
-	return service.NewServiceFromConfig(service.Config{
-		Name:               "systemkit-test-service",
-		Description:        "SystemKit Test Service",
-		Executable:         "/bin/sleep",
-		Args:               []string{"40"},
-		WorkingDirectory:   "/tmp",
-		Restart:            true,
-		DelayBeforeRestart: 10,
-		StdOut: service.LogConfig{
-			Disable: true,
+func CreateService() service.Service {
+	return service.NewServiceFromSERVICE(spec.SERVICE{
+		Name:             "systemkit-test-service",
+		Description:      "SystemKit Test Service",
+		Documentation:    "http://systemkit-test-service.com",
+		Executable:       "/bin/sleep",
+		Args:             []string{"40"},
+		WorkingDirectory: "/tmp",
+		Environment: map[string]string{
+			"TEST-ENV-VAR": "TEST-ENV-VAR-VALUE",
 		},
-		StdErr: service.LogConfig{
-			Disable: true,
+		DependsOn: []spec.ServiceType{
+			spec.ServiceNetwork,
+		},
+		Start: spec.StartConfig{
+			AtBoot:         true,
+			Restart:        true,
+			RestartTimeout: 10,
+		},
+		Logging: spec.LoggingConfig{
+			StdOut: spec.LoggingConfigOut{
+				Disabled: true,
+			},
+			StdErr: spec.LoggingConfigOut{
+				Disabled: true,
+			},
 		},
 	})
 }
 
-func createRandomService() service.Service {
+func CreateRandomService() service.Service {
 	randomData := helpersGuid.NewGUID()
 
-	return service.NewServiceFromConfig(service.Config{
-		Name:             fmt.Sprintf("systemkit-test-service-%s", randomData),
-		Description:      fmt.Sprintf("SystemKit Test Service-%s", randomData),
-		Executable:       "htop",
-		Args:             []string{""},
-		WorkingDirectory: "/tmp",
-		StdOut: service.LogConfig{
-			Disable: true,
-		},
-		StdErr: service.LogConfig{
-			Disable: true,
-		},
-	})
-}
+	serviceCopy := CreateService().Info().Service
+	serviceCopy.Name = fmt.Sprintf("systemkit-test-service-%s", randomData)
+	serviceCopy.Description = fmt.Sprintf("SystemKit Test Service-%s", randomData)
 
-func CreateRemoteitService() service.Service {
-	return service.NewServiceFromConfig(service.Config{
-		Name:             "it.remote.cli",
-		Description:      "it.remote.cli",
-		Executable:       "/Users/nicolae/Downloads/remoteit_mac-osx_x86_64",
-		Args:             []string{"watch", "-v", "-c", "/etc/remoteit/config.json"},
-		WorkingDirectory: "",
-		StdOut: service.LogConfig{
-			Disable: true,
-		},
-		StdErr: service.LogConfig{
-			Disable: true,
-		},
-	})
+	return service.NewServiceFromSERVICE(serviceCopy)
 }

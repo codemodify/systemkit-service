@@ -9,7 +9,7 @@ import (
 	service "github.com/codemodify/systemkit-service"
 )
 
-func createService() service.Service {
+func CreateService() service.Service {
 	return service.NewServiceFromConfig(service.Config{
 		Name:        "systemkit-test-service",
 		Description: "SystemKit Test Service",
@@ -26,10 +26,10 @@ func createService() service.Service {
 	})
 }
 
-func createRandomService() service.Service {
+func CreateRandomService() service.Service {
 	randomData := helpersGuid.NewGUID()
 
-	s := createService()
+	s := CreateService()
 
 	config := s.Info().Config
 	config.Name = fmt.Sprintf("%s-%s", config.Name, randomData)

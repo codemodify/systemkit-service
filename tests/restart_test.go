@@ -5,7 +5,7 @@ import (
 )
 
 func Test_restart(t *testing.T) {
-	service := createService()
+	service := CreateService()
 
 	err := service.Stop()
 	if err != nil {
@@ -19,7 +19,7 @@ func Test_restart(t *testing.T) {
 }
 
 func Test_restart_non_existing(t *testing.T) {
-	service := createRandomService()
+	service := CreateRandomService()
 
 	err := service.Stop()
 	if err != nil {

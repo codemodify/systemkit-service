@@ -1,5 +1,7 @@
 package service
 
+import "github.com/codemodify/systemkit-service/spec"
+
 // Installer - installs and removes a service
 type Installer interface {
 	Install() error
@@ -24,9 +26,9 @@ type Service interface {
 	Describer
 }
 
-// NewServiceFromConfig -
-func NewServiceFromConfig(config Config) Service {
-	return newServiceFromConfig(config)
+// NewServiceFromSERVICE -
+func NewServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
+	return newServiceFromSERVICE(serviceSpec)
 }
 
 // NewServiceFromName -
@@ -34,7 +36,7 @@ func NewServiceFromName(name string) (Service, error) {
 	return newServiceFromName(name)
 }
 
-// NewServiceFromTemplate -
-func NewServiceFromTemplate(name string, template string) (Service, error) {
-	return newServiceFromTemplate(name, template)
+// NewServiceFromPlatformTemplate -
+func NewServiceFromPlatformTemplate(name string, template string) (Service, error) {
+	return newServiceFromPlatformTemplate(name, template)
 }
