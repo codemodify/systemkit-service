@@ -79,7 +79,7 @@
 
 
 # ![](https://fonts.gstatic.com/s/i/materialicons/settings_input_composite/v5/24px.svg) Support <img src="https://img.icons8.com/color/30/000000/verified-account.png" width="20" /> 100% <img src="https://img.icons8.com/color/30/000000/in-progress--v1.png" width="20" /> in progress
-<!-- -->						| <!-- --> 																	| <!-- -->
+&nbsp;							| &nbsp; 																	| &nbsp;
 ---:							| ---																		| ---
 __systemd__						| <img src="https://img.icons8.com/color/30/000000/verified-account.png" />	| <img src="https://img.icons8.com/color/48/000000/raspberry-pi.png" /> <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Archlinux-icon-crystal-64.svg" width="48" /> <img src="https://img.icons8.com/color/48/000000/debian.png"/> <img src="https://img.icons8.com/color/48/000000/ubuntu--v1.png"/> <img src="https://img.icons8.com/color/48/000000/suse.png"/> <img src="https://img.icons8.com/color/48/000000/centos.png"/> <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Fedora_logo.svg" width="40" /> <img src="https://img.icons8.com/color/48/000000/red-hat.png"/> <img src="https://img.icons8.com/color/48/000000/linux-mint.png"/> <img src="https://img.icons8.com/color/48/000000/mandriva.png"/>
 __rc.d__						| <img src="https://img.icons8.com/color/30/000000/verified-account.png" />	| <img src="https://upload.wikimedia.org/wikipedia/en/thumb/d/df/Freebsd_logo.svg/2880px-Freebsd_logo.svg.png" width="100" /> <img src="https://www.netbsd.org/images/NetBSD-tb.png" width="50" /> <img src="https://upload.wikimedia.org/wikipedia/en/8/83/OpenBSD_Logo_-_Cartoon_Puffy_with_textual_logo_below.svg" width="80" />
