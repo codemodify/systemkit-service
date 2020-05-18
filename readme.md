@@ -23,6 +23,19 @@
 >
 > _This repo is a cross platform reference implementation of the [<u>__SERVICE__</u>](https://github.com/codemodify/systemkit-service-spec) spec_
 
+# ![](https://fonts.gstatic.com/s/i/materialicons/code/v5/24px.svg) References
+&nbsp;							| &nbsp;
+---:							| ---
+Go implementation				| https://github.com/codemodify/systemkit-service-spec
+Command line tool 				| https://github.com/codemodify/systemkit-service-cli
+Samples &amp; Tests				| https://github.com/codemodify/systemkit-service-tests
+Init Frameworks					| https://github.com/codemodify/systemkit-service-encoders-rc_d
+&nbsp;							| https://github.com/codemodify/systemkit-service-encoders-launchd
+&nbsp;							| https://github.com/codemodify/systemkit-service-encoders-systemd
+&nbsp;							| https://github.com/codemodify/systemkit-service-encoders-systemv
+&nbsp;							| https://github.com/codemodify/systemkit-service-encoders-upstart
+
+
 # ![](https://fonts.gstatic.com/s/i/materialicons/code/v5/24px.svg) How
 >```go
 >go get github.com/codemodify/systemkit-service
