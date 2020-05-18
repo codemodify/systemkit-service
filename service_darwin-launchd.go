@@ -86,13 +86,10 @@ func (thisRef launchdService) Install() error {
 
 	// 2.
 	logging.Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
-	fileContent, err := encoders.SERVICEToLaunchD(thisRef.serviceSpec)
-	if err != nil {
-		return err
-	}
+	fileContent := encoders.SERVICEToLaunchD(thisRef.serviceSpec)
 
 	logging.Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.filePath(), helpersReflect.GetThisFuncName())
-	err = ioutil.WriteFile(thisRef.filePath(), fileContent, 0644)
+	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0644)
 	if err != nil {
 		return err
 	}
