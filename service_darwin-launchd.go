@@ -13,10 +13,9 @@ import (
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
 	helpersUser "github.com/codemodify/systemkit-helpers-os"
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/codemodify/systemkit-service/encoders"
-	"github.com/codemodify/systemkit-service/spec"
+	encoders "github.com/codemodify/systemkit-service-encoders-launchd"
+	spec "github.com/codemodify/systemkit-service-spec"
 )
 
 var logTag = "LaunchD-SERVICE"
@@ -43,7 +42,7 @@ func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 		serviceSpec.Logging.StdErr.Value = filepath.Join(logDir, serviceSpec.Name+".stderr.log")
 	}
 
-	logging.Debugf("%s: serviceSpec object: %s, from %s", logTag, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: serviceSpec object: %s", logTag, helpersJSON.AsJSONString(serviceSpec))
 
 	launchdService := &launchdService{
 		serviceSpec:            serviceSpec,
@@ -68,7 +67,7 @@ func newServiceFromName(name string) (Service, error) {
 }
 
 func newServiceFromPlatformTemplate(name string, template string) (Service, error) {
-	logging.Debugf("%s: template: %s, from %s", logTag, template, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: template: %s", logTag, template)
 
 	return &launchdService{
 		serviceSpec:            encoders.LaunchDToSERVICE(template),
@@ -81,20 +80,20 @@ func (thisRef launchdService) Install() error {
 	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
-	logging.Debugf("%s: making sure folder exists: %s, from %s", logTag, dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: making sure folder exists: %s", logTag, dir)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Debugf("%s: generating plist file, from %s", logTag, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: generating plist file", logTag)
 	fileContent := encoders.SERVICEToLaunchD(thisRef.serviceSpec)
 
-	logging.Debugf("%s: writing plist to: %s, from %s", logTag, thisRef.filePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: writing plist to: %s", logTag, thisRef.filePath())
 	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0644)
 	if err != nil {
 		return err
 	}
 
-	logging.Debugf("%s: wrote unit: %s, from %s", logTag, string(fileContent), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: wrote unit: %s", logTag, string(fileContent))
 
 	return nil
 }
@@ -107,7 +106,7 @@ func (thisRef launchdService) Uninstall() error {
 	}
 
 	// 2.
-	logging.Debugf("%s: remove plist file: %s, from %s", logTag, thisRef.filePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: remove plist file: %s", logTag, thisRef.filePath())
 	err = os.Remove(thisRef.filePath())
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "no such file or directory") {
@@ -134,7 +133,7 @@ func (thisRef launchdService) Start() error {
 	}
 
 	if strings.Contains(output, "service already loaded") {
-		logging.Debugf("service already loaded, from %s", helpersReflect.GetThisFuncName())
+		logging.Debugf("service already loaded")
 
 		return nil
 	}
@@ -172,7 +171,7 @@ func (thisRef launchdService) Info() Info {
 	output, err := runLaunchCtlCommand("list")
 	if err != nil {
 		result.Error = err
-		logging.Errorf("error getting launchctl status: %s, from %s", err, helpersReflect.GetThisFuncName())
+		logging.Errorf("error getting launchctl status: %s", err)
 		return result
 	}
 
@@ -210,7 +209,7 @@ func runLaunchCtlCommand(args ...string) (string, error) {
 	// 	args = append([]string{"--user"}, args...)
 	// }
 
-	logging.Debugf("%s: RUN-LAUNCHCTL: launchctl %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-LAUNCHCTL: launchctl %s", logTag, strings.Join(args, " "))
 
 	output, err := helpersExec.ExecWithArgs("launchctl", args...)
 	errAsString := ""
@@ -218,7 +217,7 @@ func runLaunchCtlCommand(args ...string) (string, error) {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-LAUNCHCTL-OUT: output: %s, error: %s", logTag, output, errAsString)
 
 	return output, err
 }

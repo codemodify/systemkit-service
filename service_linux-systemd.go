@@ -13,10 +13,9 @@ import (
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
 	helpersUser "github.com/codemodify/systemkit-helpers-os"
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/codemodify/systemkit-service/encoders"
-	"github.com/codemodify/systemkit-service/spec"
+	encoders "github.com/codemodify/systemkit-service-encoders-systemd"
+	spec "github.com/codemodify/systemkit-service-spec"
 )
 
 var logTagSystemD = "SystemD-SERVICE"
@@ -28,7 +27,7 @@ type systemdService struct {
 }
 
 func newServiceFromSERVICE_SystemD(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: spec.SERVICE object: %s, from %s", logTagSystemD, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: spec.SERVICE object: %s", logTagSystemD, helpersJSON.AsJSONString(serviceSpec))
 
 	return &systemdService{
 		serviceSpec:            serviceSpec,
@@ -62,7 +61,7 @@ func newServiceFromName_SystemD(name string) (Service, error) {
 }
 
 func newServiceFromPlatformTemplate_SystemD(name string, template string) (Service, error) {
-	logging.Debugf("%s: template: %s, from %s", logTagSystemD, template, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: template: %s", logTagSystemD, template)
 
 	serviceSpec := encoders.SystemDToSERVICE(template)
 
@@ -77,11 +76,11 @@ func (thisRef systemdService) Install() error {
 	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
-	logging.Debugf("making sure folder exists: %s, from %s", dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("making sure folder exists: %s", dir)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("generating unit file")
 
 	fileContent := encoders.SERVICEToSystemD(thisRef.serviceSpec)
 
@@ -89,21 +88,21 @@ func (thisRef systemdService) Install() error {
 		fileContent = thisRef.fileContentTemplate
 	}
 
-	logging.Debugf("writing unit to: %s, from %s", thisRef.filePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("writing unit to: %s", thisRef.filePath())
 
 	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0644)
 	if err != nil {
 		return err
 	}
 
-	logging.Debugf("wrote unit: %s, from %s", fileContent, helpersReflect.GetThisFuncName())
+	logging.Debugf("wrote unit: %s", fileContent)
 
 	return nil
 }
 
 func (thisRef systemdService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagSystemD, thisRef.serviceSpec.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s", logTagSystemD, thisRef.serviceSpec.Name)
 
 	// 2.
 	err := thisRef.Stop()
@@ -112,7 +111,7 @@ func (thisRef systemdService) Uninstall() error {
 	}
 
 	// 3.
-	logging.Debugf("remove unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("remove unit file")
 	err = os.Remove(thisRef.filePath())
 	if e, ok := err.(*os.PathError); ok {
 		if os.IsNotExist(e.Err) {
@@ -125,14 +124,14 @@ func (thisRef systemdService) Uninstall() error {
 
 func (thisRef systemdService) Start() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon")
 	output, err := runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
-	logging.Debugf("enabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("enabling unit file with systemd")
 	output, err = runSystemCtlCommand("enable", thisRef.serviceSpec.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to enable unit") && strings.Contains(output, "does not exist") {
@@ -143,7 +142,7 @@ func (thisRef systemdService) Start() error {
 	}
 
 	// 3.
-	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("loading unit file with systemd")
 	output, err = runSystemCtlCommand("start", thisRef.serviceSpec.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
@@ -158,14 +157,14 @@ func (thisRef systemdService) Start() error {
 
 func (thisRef systemdService) Stop() error {
 	// 1.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon")
 	_, err := runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 2.
-	logging.Debugf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("stopping unit file with systemd")
 	output, err := runSystemCtlCommand("stop", thisRef.serviceSpec.Name)
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
@@ -176,10 +175,10 @@ func (thisRef systemdService) Stop() error {
 	}
 
 	// 3.
-	logging.Debugf("disabling unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("disabling unit file with systemd")
 	output, err = runSystemCtlCommand("disable", thisRef.serviceSpec.Name)
 	if err != nil {
-		logging.Warningf("stopping unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+		logging.Warningf("stopping unit file with systemd")
 
 		if strings.Contains(output, "Failed to disable") && strings.Contains(output, "does not exist") {
 			return ErrServiceDoesNotExist
@@ -191,14 +190,14 @@ func (thisRef systemdService) Stop() error {
 	}
 
 	// 4.
-	logging.Debugf("reloading daemon, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("reloading daemon")
 	_, err = runSystemCtlCommand("daemon-reload")
 	if err != nil {
 		return err
 	}
 
 	// 5.
-	logging.Debugf("running reset-failed, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("running reset-failed")
 	_, err = runSystemCtlCommand("reset-failed")
 	if err != nil {
 		return err
@@ -259,7 +258,7 @@ func runSystemCtlCommand(args ...string) (string, error) {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s, from %s", logTagSystemD, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s", logTagSystemD, strings.Join(args, " "))
 
 	output, err := helpersExec.ExecWithArgs("systemctl", args...)
 	errAsString := ""
@@ -267,7 +266,7 @@ func runSystemCtlCommand(args ...string) (string, error) {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s, from %s", logTagSystemD, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SYSTEMCTL-OUT: output: %s, error: %s", logTagSystemD, output, errAsString)
 
 	return output, err
 }

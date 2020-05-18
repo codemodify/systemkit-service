@@ -1,6 +1,8 @@
 package service
 
-import "github.com/codemodify/systemkit-service/spec"
+import (
+	spec "github.com/codemodify/systemkit-service-spec"
+)
 
 // Installer - installs and removes a service
 type Installer interface {
@@ -39,4 +41,14 @@ func NewServiceFromName(name string) (Service, error) {
 // NewServiceFromPlatformTemplate -
 func NewServiceFromPlatformTemplate(name string, template string) (Service, error) {
 	return newServiceFromPlatformTemplate(name, template)
+}
+
+// Info -
+type Info struct {
+	Error       error        `json:"-"`
+	Service     spec.SERVICE `json:"config,omitempty"`
+	IsRunning   bool         `json:"isRunning"`
+	PID         int          `json:"pid,omitempty"`
+	FilePath    string       `json:"filePath,omitempty"`
+	FileContent string       `json:"fileContent,omitempty"`
 }

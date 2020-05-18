@@ -8,9 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/codemodify/systemkit-service/spec"
+	spec "github.com/codemodify/systemkit-service-spec"
 )
 
 var logTag = "LINUX-SERVICE"
@@ -60,7 +59,7 @@ func newServiceFromPlatformTemplate(name string, template string) (Service, erro
 func getInitType() spec.InitType {
 	initBinary, err := ioutil.ReadFile("/proc/1/cmdline")
 	if err != nil {
-		logging.Errorf("%s: can't find underlying system service framework, error: %s, from %s", logTag, err.Error(), helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: can't find underlying system service framework, error: %s", logTag, err.Error())
 		return spec.InitUknown
 	}
 

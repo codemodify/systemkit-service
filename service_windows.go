@@ -15,7 +15,6 @@ import (
 	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 )
 
@@ -60,7 +59,7 @@ type windowsService struct {
 }
 
 func newServiceFromConfig(config Config) Service {
-	logging.Debugf("%s: config object: %s, from %s", logTag, helpersJSON.AsJSONString(config), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: config object: %s", logTag, helpersJSON.AsJSONString(config))
 
 	return &windowsService{
 		config: config,
@@ -109,10 +108,10 @@ func newServiceFromTemplate(name string, template string) (Service, error) {
 }
 
 func (thisRef *windowsService) Install() error {
-	logging.Debugf("%s: attempting to install: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to install: %s", logTag, thisRef.config.Name)
 
 	// 1. check if service exists
-	logging.Debugf("%s: check if exists: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: check if exists: %s", logTag, thisRef.config.Name)
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.config.Name)
 	if sError.Type == serviceErrorSuccess { // service already exists
@@ -134,13 +133,13 @@ func (thisRef *windowsService) Install() error {
 			winServiceManager.Disconnect()
 		}
 
-		logging.Errorf("%s: service '%s' encountered error %s, from %s", logTag, thisRef.config.Name, sError.Error.Error(), helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: service '%s' encountered error %s", logTag, thisRef.config.Name, sError.Error.Error())
 
 		return sError.Error
 	}
 
 	// 2. create the system service
-	logging.Debugf("%s: creating: '%s', binary: '%s', args: '%s', from %s", logTag, thisRef.config.Name, thisRef.config.Executable, thisRef.config.Args, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: creating: '%s', binary: '%s', args: '%s'", logTag, thisRef.config.Name, thisRef.config.Executable, thisRef.config.Args)
 
 	winService, err := winServiceManager.CreateService(
 		thisRef.config.Name,
@@ -160,7 +159,7 @@ func (thisRef *windowsService) Install() error {
 			winServiceManager.Disconnect()
 		}
 
-		logging.Errorf("%s: error creating: %s, details: %v, from %s", logTag, thisRef.config.Name, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error creating: %s, details: %v", logTag, thisRef.config.Name, err)
 
 		return err
 	}
@@ -168,14 +167,14 @@ func (thisRef *windowsService) Install() error {
 	winService.Close()
 	winServiceManager.Disconnect()
 
-	logging.Debugf("%s: created: '%s', binary: '%s', args: '%s', from %s", logTag, thisRef.config.Name, thisRef.config.Executable, thisRef.config.Args, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: created: '%s', binary: '%s', args: '%s'", logTag, thisRef.config.Name, thisRef.config.Executable, thisRef.config.Args)
 
 	return nil
 }
 
 func (thisRef *windowsService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s", logTag, thisRef.config.Name)
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.config.Name)
 	if sError.Type == serviceErrorDoesNotExist {
@@ -189,19 +188,19 @@ func (thisRef *windowsService) Uninstall() error {
 	// 2.
 	err := winService.Delete()
 	if err != nil {
-		logging.Errorf("%s: failed to uninstall: %s, %v, from %s", logTag, thisRef.config.Name, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: failed to uninstall: %s, %v", logTag, thisRef.config.Name, err)
 
 		return err
 	}
 
-	logging.Debugf("%s: uninstalled: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: uninstalled: %s", logTag, thisRef.config.Name)
 
 	return nil
 }
 
 func (thisRef *windowsService) Start() error {
 	// 1.
-	logging.Debugf("%s: attempting to start: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to start: %s", logTag, thisRef.config.Name)
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.config.Name)
 	if sError.Type != serviceErrorSuccess {
@@ -225,27 +224,27 @@ func (thisRef *windowsService) Start() error {
 	err := winService.Start()
 	if err != nil {
 		if !strings.Contains(err.Error(), "already running") {
-			logging.Errorf("%s: error starting: %s, %v, from %s", logTag, thisRef.config.Name, err, helpersReflect.GetThisFuncName())
+			logging.Errorf("%s: error starting: %s, %v", logTag, thisRef.config.Name, err)
 
 			return fmt.Errorf("error starting: %s, %v", thisRef.config.Name, err)
 		}
 	}
 
-	logging.Debugf("%s: started: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: started: %s", logTag, thisRef.config.Name)
 
 	return nil
 }
 
 func (thisRef *windowsService) Stop() error {
 	// 1.
-	logging.Debugf("%s: attempting to stop: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to stop: %s", logTag, thisRef.config.Name)
 
 	if thisRef.config.OnStopDelegate != nil {
-		logging.Debugf("%s: OnStopDelegate before-calling: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+		logging.Debugf("%s: OnStopDelegate before-calling: %s", logTag, thisRef.config.Name)
 
 		thisRef.config.OnStopDelegate()
 
-		logging.Debugf("%s: OnStopDelegate after-calling: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+		logging.Debugf("%s: OnStopDelegate after-calling: %s", logTag, thisRef.config.Name)
 	}
 
 	// 2.
@@ -260,7 +259,7 @@ func (thisRef *windowsService) Stop() error {
 			return nil
 		}
 
-		logging.Errorf("%s: error %s, details: %s, from %s", logTag, thisRef.config.Name, err.Error(), helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error %s, details: %s", logTag, thisRef.config.Name, err.Error())
 
 		return err
 	}
@@ -272,7 +271,7 @@ func (thisRef *windowsService) Stop() error {
 	for {
 		attempt++
 
-		logging.Debugf("%s: waiting for service to stop, from %s", logTag, helpersReflect.GetThisFuncName())
+		logging.Debugf("%s: waiting for service to stop", logTag)
 
 		// Wait a few seconds before retrying
 		time.Sleep(wait)
@@ -297,7 +296,7 @@ func (thisRef *windowsService) Stop() error {
 		}
 	}
 
-	logging.Debugf("%s: stopped: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: stopped: %s", logTag, thisRef.config.Name)
 
 	return nil
 }
@@ -311,7 +310,7 @@ func (thisRef *windowsService) Info() Info {
 	}
 
 	// 1.
-	logging.Debugf("%s: querying status: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: querying status: %s", logTag, thisRef.config.Name)
 
 	winServiceManager, winService, sError := connectAndOpenService(thisRef.config.Name)
 	if sError.Type != serviceErrorSuccess {
@@ -336,13 +335,13 @@ func (thisRef *windowsService) Info() Info {
 	// 2.
 	stat, err1 := winService.Query()
 	if err1 != nil {
-		logging.Errorf("%s: error getting service status: %s, from %s", logTag, err1, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error getting service status: %s", logTag, err1)
 
 		result.Error = fmt.Errorf("error getting service status: %v", err1)
 		return result
 	}
 
-	logging.Debugf("%s: service status: %#v, from %s", logTag, stat, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: service status: %#v", logTag, stat)
 
 	result.PID = int(stat.ProcessId)
 	result.IsRunning = (stat.State == svc.Running)
@@ -354,7 +353,7 @@ func (thisRef *windowsService) Info() Info {
 }
 
 func (thisRef *windowsService) control(config svc.Cmd, state svc.State) error {
-	logging.Debugf("%s: attempting to control: %s, cmd: %v, from %s", logTag, thisRef.config.Name, config, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to control: %s, cmd: %v", logTag, thisRef.config.Name, config)
 
 	winServiceManager, winService, err := connectAndOpenService(thisRef.config.Name)
 	if err.Type != serviceErrorSuccess {
@@ -365,7 +364,7 @@ func (thisRef *windowsService) control(config svc.Cmd, state svc.State) error {
 
 	status, err1 := winService.Control(config)
 	if err1 != nil {
-		logging.Errorf("%s: could not send control: %d, to: %s, details: %v, from %s", logTag, config, thisRef.config.Name, err1, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: could not send control: %d, to: %s, details: %v", logTag, config, thisRef.config.Name, err1)
 
 		return fmt.Errorf("could not send control: %d, to: %s, details: %v", config, thisRef.config.Name, err1)
 	}
@@ -374,7 +373,7 @@ func (thisRef *windowsService) control(config svc.Cmd, state svc.State) error {
 	for status.State != state {
 		// Exit if a timeout is reached
 		if timeout.Before(time.Now()) {
-			logging.Errorf("%s: timeout waiting for service to go to state=%d, from %s", logTag, state, helpersReflect.GetThisFuncName())
+			logging.Errorf("%s: timeout waiting for service to go to state=%d", logTag, state)
 
 			return fmt.Errorf("timeout waiting for service to go to state=%d", state)
 		}
@@ -384,7 +383,7 @@ func (thisRef *windowsService) control(config svc.Cmd, state svc.State) error {
 		// Make sure transition happens to the desired state
 		status, err1 = winService.Query()
 		if err1 != nil {
-			logging.Errorf("%s: could not retrieve service status: %v, from %s", logTag, err1, helpersReflect.GetThisFuncName())
+			logging.Errorf("%s: could not retrieve service status: %v", logTag, err1)
 
 			return fmt.Errorf("could not retrieve service status: %v", err1)
 		}
@@ -395,20 +394,20 @@ func (thisRef *windowsService) control(config svc.Cmd, state svc.State) error {
 
 func connectAndOpenService(serviceName string) (*svcMgr.Mgr, *svcMgr.Service, serviceError) {
 	// 1.
-	logging.Debugf("%s: connecting to Windows Service Manager, from %s", logTag, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: connecting to Windows Service Manager", logTag)
 
 	winServiceManager, err := svcMgr.Connect()
 	if err != nil {
-		logging.Errorf("%s: error connecting to Windows Service Manager: %v, from %s", logTag, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error connecting to Windows Service Manager: %v", logTag, err)
 		return nil, nil, serviceError{Type: serviceErrorCantConnect, Error: err}
 	}
 
 	// 2.
-	logging.Debugf("%s: opening service: %s, from %s", logTag, serviceName, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: opening service: %s", logTag, serviceName)
 
 	winService, err := winServiceManager.OpenService(serviceName)
 	if err != nil {
-		logging.Errorf("%s: error opening service: %s, %v, from %s", logTag, serviceName, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error opening service: %s, %v", logTag, serviceName, err)
 
 		return winServiceManager, nil, serviceError{Type: serviceErrorDoesNotExist, Error: err}
 	}
@@ -417,7 +416,7 @@ func connectAndOpenService(serviceName string) (*svcMgr.Mgr, *svcMgr.Service, se
 }
 
 func (thisRef *windowsService) Run() error {
-	logging.Debugf("%s: attempting to run: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to run: %s", logTag, thisRef.config.Name)
 
 	wg := sync.WaitGroup{}
 
@@ -428,29 +427,29 @@ func (thisRef *windowsService) Run() error {
 		wg.Done()
 	}()
 
-	logging.Debugf("%s: running: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: running: %s", logTag, thisRef.config.Name)
 	wg.Wait()
 
 	if err != nil {
-		logging.Errorf("%s: failed to run: %s, %v, from %s", logTag, thisRef.config.Name, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: failed to run: %s, %v", logTag, thisRef.config.Name, err)
 	}
 
-	logging.Debugf("%s: stopped: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: stopped: %s", logTag, thisRef.config.Name)
 
 	return nil
 }
 
 func (thisRef *windowsService) Exists() bool {
-	logging.Debugf("%s: checking existence: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: checking existence: %s", logTag, thisRef.config.Name)
 
 	args := []string{"queryex", fmt.Sprintf("\"%s\"", thisRef.config.Name)}
 
 	// https://www.computerhope.com/sc-config.htm
-	logging.Debugf("%s: running: 'sc %s', from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: running: 'sc %s'", logTag, strings.Join(args, " "))
 
 	_, err := helpersExec.ExecWithArgs("sc", args...)
 	if err != nil {
-		logging.Errorf("%s: error when checking %s, from %s", logTag, err, helpersReflect.GetThisFuncName())
+		logging.Errorf("%s: error when checking %s", logTag, err)
 		return false
 	}
 
@@ -458,7 +457,7 @@ func (thisRef *windowsService) Exists() bool {
 }
 
 func (thisRef *windowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
-	logging.Debugf("%s: WINDOWS SERVICE EXECUTE, from %s", logTag, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: WINDOWS SERVICE EXECUTE", logTag)
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.StartPending}
@@ -477,11 +476,11 @@ loop:
 
 			case svc.Stop, svc.Shutdown:
 				if thisRef.config.OnStopDelegate != nil {
-					logging.Debugf("%s: OnStopDelegate before-calling: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+					logging.Debugf("%s: OnStopDelegate before-calling: %s", logTag, thisRef.config.Name)
 
 					go thisRef.config.OnStopDelegate()
 
-					logging.Debugf("%s: OnStopDelegate after-calling: %s, from %s", logTag, thisRef.config.Name, helpersReflect.GetThisFuncName())
+					logging.Debugf("%s: OnStopDelegate after-calling: %s", logTag, thisRef.config.Name)
 				}
 
 				// golang.org/x/sys/windows/svc.TestExample is verifying this output.
@@ -501,7 +500,7 @@ loop:
 				changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 
 			default:
-				logging.Warningf("%s: unexpected control request #%d, from %s", logTag, c, helpersReflect.GetThisFuncName())
+				logging.Warningf("%s: unexpected control request #%d", logTag, c)
 			}
 		}
 	}
@@ -513,7 +512,7 @@ loop:
 func runWmicCommand(args ...string) string {
 	// wmic service "systemkit-test-service" get PathName
 
-	logging.Debugf("%s: RUN-WMIC: wmic %s, from %s", logTag, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-WMIC: wmic %s", logTag, strings.Join(args, " "))
 
 	output, err := helpersExec.ExecWithArgs("wmic", args...)
 	errAsString := ""
@@ -521,7 +520,7 @@ func runWmicCommand(args ...string) string {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-WMIC-OUT: output: %s, error: %s, from %s", logTag, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-WMIC-OUT: output: %s, error: %s", logTag, output, errAsString)
 
 	lines := strings.Split(output, "\n")
 	if len(lines) > 1 {

@@ -11,10 +11,9 @@ import (
 	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/codemodify/systemkit-service/encoders"
-	"github.com/codemodify/systemkit-service/spec"
+	encoders "github.com/codemodify/systemkit-service-encoders-rc_d"
+	spec "github.com/codemodify/systemkit-service-spec"
 )
 
 var logTagRCD = "rc.d-SERVICE"
@@ -26,7 +25,7 @@ type rcdService struct {
 }
 
 func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s, from %s", logTagRCD, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: serviceSpec object: %s", logTagRCD, helpersJSON.AsJSONString(serviceSpec))
 
 	return &rcdService{
 		serviceSpec:            serviceSpec,
@@ -49,7 +48,7 @@ func newServiceFromName(name string) (Service, error) {
 }
 
 func newServiceFromPlatformTemplate(name string, template string) (Service, error) {
-	logging.Debugf("%s: template: %s, from %s", logTagRCD, template, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: template: %s", logTagRCD, template)
 
 	serviceSpec := encoders.RC_DToSERVICE(template)
 
@@ -64,19 +63,19 @@ func (thisRef rcdService) Install() error {
 	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
-	logging.Debugf("making sure folder exists: %s, from %s", dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("making sure folder exists: %s", dir)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("generating unit file")
 
-	fileContent := encoders.SERVICEToUpStart(thisRef.serviceSpec)
+	fileContent := encoders.SERVICEToRC_D(thisRef.serviceSpec)
 
 	if !thisRef.useConfigAsFileContent {
 		fileContent = thisRef.fileContentTemplate
 	}
 
-	logging.Debugf("writing unit to: %s, from %s", thisRef.filePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("writing unit to: %s", thisRef.filePath())
 
 	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0644)
 	if err != nil {
@@ -95,14 +94,14 @@ func (thisRef rcdService) Install() error {
 	// 	}
 	// }
 
-	logging.Debugf("wrote unit: %s, from %s", string(fileContent), helpersReflect.GetThisFuncName())
+	logging.Debugf("wrote unit: %s", string(fileContent))
 
 	return nil
 }
 
 func (thisRef rcdService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagRCD, thisRef.serviceSpec.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s", logTagRCD, thisRef.serviceSpec.Name)
 
 	// 2.
 	err := thisRef.Stop()
@@ -111,7 +110,7 @@ func (thisRef rcdService) Uninstall() error {
 	}
 
 	// 3.
-	logging.Debugf("remove unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("remove unit file")
 	err = os.Remove(thisRef.filePath())
 	if e, ok := err.(*os.PathError); ok {
 		if os.IsNotExist(e.Err) {
@@ -124,7 +123,7 @@ func (thisRef rcdService) Uninstall() error {
 
 func (thisRef rcdService) Start() error {
 	// 1.
-	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("loading unit file with systemd")
 	output, err := runServiceCommand(thisRef.serviceSpec.Name, "start")
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
@@ -139,7 +138,7 @@ func (thisRef rcdService) Start() error {
 
 func (thisRef rcdService) Stop() error {
 	// 1.
-	logging.Debugf("stopping service, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("stopping service")
 	output, err := runServiceCommand(thisRef.serviceSpec.Name, "stop")
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
@@ -196,7 +195,7 @@ func (thisRef rcdService) filePath() string {
 }
 
 func runServiceCommand(args ...string) (string, error) {
-	logging.Debugf("%s: RUN-SERVICE: service %s, from %s", logTagRCD, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE: service %s", logTagRCD, strings.Join(args, " "))
 
 	output, err := helpersExec.ExecWithArgs("service", args...)
 	errAsString := ""
@@ -204,7 +203,7 @@ func runServiceCommand(args ...string) (string, error) {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SERVICE-OUT: output: %s, error: %s, from %s", logTagRCD, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE-OUT: output: %s, error: %s", logTagRCD, output, errAsString)
 
 	return output, err
 }

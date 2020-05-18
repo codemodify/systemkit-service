@@ -12,10 +12,9 @@ import (
 	helpersExec "github.com/codemodify/systemkit-helpers-os"
 	helpersUser "github.com/codemodify/systemkit-helpers-os"
 	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
-	helpersReflect "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
-	"github.com/codemodify/systemkit-service/encoders"
-	"github.com/codemodify/systemkit-service/spec"
+	encoders "github.com/codemodify/systemkit-service-encoders-systemv"
+	spec "github.com/codemodify/systemkit-service-spec"
 )
 
 var logTagSystemV = "SystemV-SERVICE"
@@ -27,7 +26,7 @@ type systemvService struct {
 }
 
 func newServiceFromSERVICE_SystemV(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s, from %s", logTagSystemV, helpersJSON.AsJSONString(serviceSpec), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: serviceSpec object: %s", logTagSystemV, helpersJSON.AsJSONString(serviceSpec))
 
 	return &systemvService{
 		serviceSpec:            serviceSpec,
@@ -47,7 +46,7 @@ func newServiceFromName_SystemV(name string) (Service, error) {
 }
 
 func newServiceFromPlatformTemplate_SystemV(name string, template string) (Service, error) {
-	logging.Debugf("%s: template: %s, from %s", logTagSystemV, template, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: template: %s", logTagSystemV, template)
 
 	serviceSpec := encoders.SystemVToSERVICE(template)
 
@@ -62,11 +61,11 @@ func (thisRef systemvService) Install() error {
 	dir := filepath.Dir(thisRef.filePath())
 
 	// 1.
-	logging.Debugf("making sure folder exists: %s, from %s", dir, helpersReflect.GetThisFuncName())
+	logging.Debugf("making sure folder exists: %s", dir)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// 2.
-	logging.Debugf("generating unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("generating unit file")
 
 	fileContent := encoders.SERVICEToSystemV(thisRef.serviceSpec)
 
@@ -74,7 +73,7 @@ func (thisRef systemvService) Install() error {
 		fileContent = thisRef.fileContentTemplate
 	}
 
-	logging.Debugf("writing unit to: %s, from %s", thisRef.filePath(), helpersReflect.GetThisFuncName())
+	logging.Debugf("writing unit to: %s", thisRef.filePath())
 
 	err := ioutil.WriteFile(thisRef.filePath(), []byte(fileContent), 0755)
 	if err != nil {
@@ -93,14 +92,14 @@ func (thisRef systemvService) Install() error {
 		}
 	}
 
-	logging.Debugf("wrote unit: %s, from %s", fileContent, helpersReflect.GetThisFuncName())
+	logging.Debugf("wrote unit: %s", fileContent)
 
 	return nil
 }
 
 func (thisRef systemvService) Uninstall() error {
 	// 1.
-	logging.Debugf("%s: attempting to uninstall: %s, from %s", logTagSystemV, thisRef.serviceSpec.Name, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: attempting to uninstall: %s", logTagSystemV, thisRef.serviceSpec.Name)
 
 	// 2.
 	err := thisRef.Stop()
@@ -109,7 +108,7 @@ func (thisRef systemvService) Uninstall() error {
 	}
 
 	// 3.
-	logging.Debugf("remove unit file, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("remove unit file")
 	err = os.Remove(thisRef.filePath())
 	if e, ok := err.(*os.PathError); ok {
 		if os.IsNotExist(e.Err) {
@@ -122,7 +121,7 @@ func (thisRef systemvService) Uninstall() error {
 
 func (thisRef systemvService) Start() error {
 	// 1.
-	logging.Debugf("loading unit file with systemd, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("loading unit file with systemd")
 	output, err := runServiceCommand(thisRef.serviceSpec.Name, "start")
 	if err != nil {
 		if strings.Contains(output, "Failed to start") && strings.Contains(output, "not found") {
@@ -137,7 +136,7 @@ func (thisRef systemvService) Start() error {
 
 func (thisRef systemvService) Stop() error {
 	// 1.
-	logging.Debugf("stopping service, from %s", helpersReflect.GetThisFuncName())
+	logging.Debugf("stopping service")
 	output, err := runServiceCommand(thisRef.serviceSpec.Name, "stop")
 	if err != nil {
 		if strings.Contains(output, "Failed to stop") && strings.Contains(output, "not loaded") {
@@ -198,7 +197,7 @@ func runServiceCommand(args ...string) (string, error) {
 		args = append([]string{"--user"}, args...)
 	}
 
-	logging.Debugf("%s: RUN-SERVICE: service %s, from %s", logTagSystemV, strings.Join(args, " "), helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE: service %s", logTagSystemV, strings.Join(args, " "))
 
 	output, err := helpersExec.ExecWithArgs("service", args...)
 	errAsString := ""
@@ -206,7 +205,7 @@ func runServiceCommand(args ...string) (string, error) {
 		errAsString = err.Error()
 	}
 
-	logging.Debugf("%s: RUN-SERVICE-OUT: output: %s, error: %s, from %s", logTagSystemV, output, errAsString, helpersReflect.GetThisFuncName())
+	logging.Debugf("%s: RUN-SERVICE-OUT: output: %s, error: %s", logTagSystemV, output, errAsString)
 
 	return output, err
 }
