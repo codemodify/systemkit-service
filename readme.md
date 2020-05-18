@@ -26,7 +26,7 @@
 # ![](https://fonts.gstatic.com/s/i/materialicons/code/v5/24px.svg) References
 &nbsp;							| &nbsp;
 ---:							| ---
-Go implementation				| https://github.com/codemodify/systemkit-service-spec
+Spec for portable SERVICE		| https://github.com/codemodify/systemkit-service-spec
 Command line tool 				| https://github.com/codemodify/systemkit-service-cli
 Samples &amp; Tests				| https://github.com/codemodify/systemkit-service-tests
 Init Frameworks					| https://github.com/codemodify/systemkit-service-encoders-rc_d
