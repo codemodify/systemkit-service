@@ -8,13 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersUser "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	encoders "github.com/codemodify/systemkit-service-encoders-upstart"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTagUpstart = "UpStart-SERVICE"
@@ -26,7 +23,7 @@ type upstartService struct {
 }
 
 func newServiceFromSERVICE_Upstart(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s", logTagUpstart, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: serviceSpec object: %s", logTagUpstart, helpers.AsJSONString(serviceSpec))
 
 	return &upstartService{
 		serviceSpec:            serviceSpec,
@@ -91,7 +88,7 @@ func (thisRef upstartService) Uninstall() error {
 
 	// 2.
 	err := thisRef.Stop()
-	if err != nil && !helpersErrors.Is(err, ErrServiceDoesNotExist) {
+	if err != nil && !helpers.Is(err, ErrServiceDoesNotExist) {
 		return err
 	}
 
@@ -181,13 +178,13 @@ func (thisRef upstartService) filePath() string {
 }
 
 func runInitctlCommand(args ...string) (string, error) {
-	if !helpersUser.IsRoot() {
+	if !helpers.IsRoot() {
 		args = append([]string{"--user"}, args...)
 	}
 
 	logging.Debugf("%s: RUN-INITCTL: initctl %s", logTagUpstart, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("initctl", args...)
+	output, err := helpers.ExecWithArgs("initctl", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()

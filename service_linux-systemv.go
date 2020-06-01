@@ -8,13 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersUser "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	encoders "github.com/codemodify/systemkit-service-encoders-systemv"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTagSystemV = "SystemV-SERVICE"
@@ -26,7 +23,7 @@ type systemvService struct {
 }
 
 func newServiceFromSERVICE_SystemV(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s", logTagSystemV, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: serviceSpec object: %s", logTagSystemV, helpers.AsJSONString(serviceSpec))
 
 	return &systemvService{
 		serviceSpec:            serviceSpec,
@@ -103,7 +100,7 @@ func (thisRef systemvService) Uninstall() error {
 
 	// 2.
 	err := thisRef.Stop()
-	if err != nil && !helpersErrors.Is(err, ErrServiceDoesNotExist) {
+	if err != nil && !helpers.Is(err, ErrServiceDoesNotExist) {
 		return err
 	}
 
@@ -193,13 +190,13 @@ func (thisRef systemvService) filePath() string {
 }
 
 func runServiceCommand(args ...string) (string, error) {
-	if !helpersUser.IsRoot() {
+	if !helpers.IsRoot() {
 		args = append([]string{"--user"}, args...)
 	}
 
 	logging.Debugf("%s: RUN-SERVICE: service %s", logTagSystemV, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("service", args...)
+	output, err := helpers.ExecWithArgs("service", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()

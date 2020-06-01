@@ -9,13 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersUser "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	encoders "github.com/codemodify/systemkit-service-encoders-systemd"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTagSystemD = "SystemD-SERVICE"
@@ -27,7 +24,7 @@ type systemdService struct {
 }
 
 func newServiceFromSERVICE_SystemD(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: spec.SERVICE object: %s", logTagSystemD, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: spec.SERVICE object: %s", logTagSystemD, helpers.AsJSONString(serviceSpec))
 
 	return &systemdService{
 		serviceSpec:            serviceSpec,
@@ -39,7 +36,7 @@ func newServiceFromName_SystemD(name string) (Service, error) {
 	fileContent := []byte{}
 	var err error
 
-	if helpersUser.IsRoot() {
+	if helpers.IsRoot() {
 		serviceFile := filepath.Join("/etc/systemd/system", name+".service")
 		fileContent, err = ioutil.ReadFile(serviceFile)
 		if err != nil {
@@ -50,7 +47,7 @@ func newServiceFromName_SystemD(name string) (Service, error) {
 			}
 		}
 	} else {
-		serviceFile := filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", name+".service")
+		serviceFile := filepath.Join(helpers.HomeDir(""), ".config/systemd/user", name+".service")
 		fileContent, err = ioutil.ReadFile(serviceFile)
 		if err != nil {
 			return nil, ErrServiceDoesNotExist
@@ -106,7 +103,7 @@ func (thisRef systemdService) Uninstall() error {
 
 	// 2.
 	err := thisRef.Stop()
-	if err != nil && !helpersErrors.Is(err, ErrServiceDoesNotExist) {
+	if err != nil && !helpers.Is(err, ErrServiceDoesNotExist) {
 		return err
 	}
 
@@ -246,21 +243,21 @@ func (thisRef systemdService) Info() Info {
 }
 
 func (thisRef systemdService) filePath() string {
-	if helpersUser.IsRoot() {
+	if helpers.IsRoot() {
 		return filepath.Join("/etc/systemd/system", thisRef.serviceSpec.Name+".service")
 	}
 
-	return filepath.Join(helpersUser.HomeDir(""), ".config/systemd/user", thisRef.serviceSpec.Name+".service")
+	return filepath.Join(helpers.HomeDir(""), ".config/systemd/user", thisRef.serviceSpec.Name+".service")
 }
 
 func runSystemCtlCommand(args ...string) (string, error) {
-	if !helpersUser.IsRoot() {
+	if !helpers.IsRoot() {
 		args = append([]string{"--user"}, args...)
 	}
 
 	logging.Debugf("%s: RUN-SYSTEMCTL: systemctl %s", logTagSystemD, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("systemctl", args...)
+	output, err := helpers.ExecWithArgs("systemctl", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()

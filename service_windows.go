@@ -11,11 +11,9 @@ import (
 	"golang.org/x/sys/windows/svc"
 	svcMgr "golang.org/x/sys/windows/svc/mgr"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTag = "Windows-SERVICE"
@@ -58,7 +56,7 @@ type windowsService struct {
 }
 
 func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s", logTag, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: serviceSpec object: %s", logTag, helpers.AsJSONString(serviceSpec))
 
 	return &windowsService{
 		serviceSpec: serviceSpec,
@@ -68,7 +66,7 @@ func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 func newServiceFromName(name string) (Service, error) {
 	// quick fire
 	info := newServiceFromSERVICE(spec.SERVICE{Name: name}).Info()
-	if helpersErrors.Is(info.Error, ErrServiceDoesNotExist) {
+	if helpers.Is(info.Error, ErrServiceDoesNotExist) {
 		return nil, ErrServiceDoesNotExist
 	}
 
@@ -434,7 +432,7 @@ func (thisRef *windowsService) Exists() bool {
 	// https://www.computerhope.com/sc-serviceSpec.htm
 	logging.Debugf("%s: running: 'sc %s'", logTag, strings.Join(args, " "))
 
-	_, err := helpersExec.ExecWithArgs("sc", args...)
+	_, err := helpers.ExecWithArgs("sc", args...)
 	if err != nil {
 		logging.Errorf("%s: error when checking %s", logTag, err)
 		return false
@@ -448,7 +446,7 @@ func runWmicCommand(args ...string) string {
 
 	logging.Debugf("%s: RUN-WMIC: wmic %s", logTag, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("wmic", args...)
+	output, err := helpers.ExecWithArgs("wmic", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()

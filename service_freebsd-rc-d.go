@@ -8,12 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	encoders "github.com/codemodify/systemkit-service-encoders-rc_d"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTagRCD = "rc.d-SERVICE"
@@ -25,7 +23,7 @@ type rcdService struct {
 }
 
 func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
-	logging.Debugf("%s: serviceSpec object: %s", logTagRCD, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: serviceSpec object: %s", logTagRCD, helpers.AsJSONString(serviceSpec))
 
 	return &rcdService{
 		serviceSpec:            serviceSpec,
@@ -105,7 +103,7 @@ func (thisRef rcdService) Uninstall() error {
 
 	// 2.
 	err := thisRef.Stop()
-	if err != nil && !helpersErrors.Is(err, ErrServiceDoesNotExist) {
+	if err != nil && !helpers.Is(err, ErrServiceDoesNotExist) {
 		return err
 	}
 
@@ -197,7 +195,7 @@ func (thisRef rcdService) filePath() string {
 func runServiceCommand(args ...string) (string, error) {
 	logging.Debugf("%s: RUN-SERVICE: service %s", logTagRCD, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("service", args...)
+	output, err := helpers.ExecWithArgs("service", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()

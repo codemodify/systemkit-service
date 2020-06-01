@@ -9,13 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	helpersJSON "github.com/codemodify/systemkit-helpers-conv"
-	helpersExec "github.com/codemodify/systemkit-helpers-os"
-	helpersUser "github.com/codemodify/systemkit-helpers-os"
-	helpersErrors "github.com/codemodify/systemkit-helpers-reflection"
 	logging "github.com/codemodify/systemkit-logging"
 	encoders "github.com/codemodify/systemkit-service-encoders-launchd"
 	spec "github.com/codemodify/systemkit-service-spec"
+	"github.com/codemodify/systemkit-service/helpers"
 )
 
 var logTag = "LaunchD-SERVICE"
@@ -29,8 +26,8 @@ type launchdService struct {
 func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 	// override some values - platform specific
 	// https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html
-	logDir := filepath.Join(helpersUser.HomeDir(""), "Library/Logs", serviceSpec.Name)
-	if helpersUser.IsRoot() {
+	logDir := filepath.Join(helpers.HomeDir(""), "Library/Logs", serviceSpec.Name)
+	if helpers.IsRoot() {
 		logDir = filepath.Join("/Library/Logs", serviceSpec.Name)
 	}
 
@@ -42,7 +39,7 @@ func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 		serviceSpec.Logging.StdErr.Value = filepath.Join(logDir, serviceSpec.Name+".stderr.log")
 	}
 
-	logging.Debugf("%s: serviceSpec object: %s", logTag, helpersJSON.AsJSONString(serviceSpec))
+	logging.Debugf("%s: serviceSpec object: %s", logTag, helpers.AsJSONString(serviceSpec))
 
 	launchdService := &launchdService{
 		serviceSpec:            serviceSpec,
@@ -53,8 +50,8 @@ func newServiceFromSERVICE(serviceSpec spec.SERVICE) Service {
 }
 
 func newServiceFromName(name string) (Service, error) {
-	serviceFile := filepath.Join(helpersUser.HomeDir(""), "Library/LaunchAgents", name+".plist")
-	if helpersUser.IsRoot() {
+	serviceFile := filepath.Join(helpers.HomeDir(""), "Library/LaunchAgents", name+".plist")
+	if helpers.IsRoot() {
 		serviceFile = filepath.Join("/Library/LaunchDaemons", name+".plist")
 	}
 
@@ -101,7 +98,7 @@ func (thisRef launchdService) Install() error {
 func (thisRef launchdService) Uninstall() error {
 	// 1.
 	err := thisRef.Stop()
-	if err != nil && !helpersErrors.Is(err, ErrServiceDoesNotExist) {
+	if err != nil && !helpers.Is(err, ErrServiceDoesNotExist) {
 		return err
 	}
 
@@ -197,21 +194,21 @@ func (thisRef launchdService) Info() Info {
 }
 
 func (thisRef launchdService) filePath() string {
-	if helpersUser.IsRoot() {
+	if helpers.IsRoot() {
 		return filepath.Join("/Library/LaunchDaemons", thisRef.serviceSpec.Name+".plist")
 	}
 
-	return filepath.Join(helpersUser.HomeDir(""), "Library/LaunchAgents", thisRef.serviceSpec.Name+".plist")
+	return filepath.Join(helpers.HomeDir(""), "Library/LaunchAgents", thisRef.serviceSpec.Name+".plist")
 }
 
 func runLaunchCtlCommand(args ...string) (string, error) {
-	// if !helpersUser.IsRoot() {
+	// if !helpers.IsRoot() {
 	// 	args = append([]string{"--user"}, args...)
 	// }
 
 	logging.Debugf("%s: RUN-LAUNCHCTL: launchctl %s", logTag, strings.Join(args, " "))
 
-	output, err := helpersExec.ExecWithArgs("launchctl", args...)
+	output, err := helpers.ExecWithArgs("launchctl", args...)
 	errAsString := ""
 	if err != nil {
 		errAsString = err.Error()
