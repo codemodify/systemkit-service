@@ -153,10 +153,10 @@ func (thisRef *windowsService) Install() error {
 		thisRef.serviceSpec.Name,
 		thisRef.serviceSpec.Executable,
 		svcMgr.Config{
-			DisplayName:      thisRef.serviceSpec.Name,
-			Description:      thisRef.serviceSpec.Description,
-			StartType:        startType,
-			ServiceStartName: thisRef.serviceSpec.Credentials.User,
+			DisplayName: thisRef.serviceSpec.Name,
+			Description: thisRef.serviceSpec.Description,
+			StartType:   startType,
+			// ServiceStartName: thisRef.serviceSpec.Credentials.User, // FIXME:
 			// Dependencies:     dependencies,
 		},
 		thisRef.serviceSpec.Args...,
