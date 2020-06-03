@@ -143,10 +143,11 @@ func (thisRef *windowsService) Install() error {
 		startType = svcMgr.StartManual
 	}
 
-	dependencies := []string{}
-	for _, dependsOn := range thisRef.serviceSpec.DependsOn {
-		dependencies = append(dependencies, string(dependsOn))
-	}
+	// FIXME: revisit dependencies
+	// dependencies := []string{}
+	// for _, dependsOn := range thisRef.serviceSpec.DependsOn {
+	// 	dependencies = append(dependencies, string(dependsOn))
+	// }
 
 	winService, err := winServiceManager.CreateService(
 		thisRef.serviceSpec.Name,
@@ -156,7 +157,7 @@ func (thisRef *windowsService) Install() error {
 			Description:      thisRef.serviceSpec.Description,
 			StartType:        startType,
 			ServiceStartName: thisRef.serviceSpec.Credentials.User,
-			Dependencies:     dependencies,
+			// Dependencies:     dependencies,
 		},
 		thisRef.serviceSpec.Args...,
 	)

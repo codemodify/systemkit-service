@@ -57,7 +57,6 @@ func (thisRef windowsServiceQueryHandler) Execute(args []string, r <-chan svc.Ch
 
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown | svc.AcceptPauseAndContinue
 	changes <- svc.Status{State: svc.StartPending}
-
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
 loop:
 	for {
