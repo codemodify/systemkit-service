@@ -161,6 +161,30 @@ func (thisRef *windowsService) Install() error {
 		},
 		thisRef.serviceSpec.Args...,
 	)
+
+	winService.SetRecoveryActions([]svcMgr.RecoveryAction{
+		svcMgr.RecoveryAction{
+			Type:  svcMgr.ServiceRestart,
+			Delay: time.Duration(thisRef.serviceSpec.Start.RestartTimeout) * time.Second,
+		},
+		svcMgr.RecoveryAction{
+			Type:  svcMgr.ServiceRestart,
+			Delay: time.Duration(thisRef.serviceSpec.Start.RestartTimeout) * time.Second,
+		},
+		svcMgr.RecoveryAction{
+			Type:  svcMgr.ServiceRestart,
+			Delay: time.Duration(thisRef.serviceSpec.Start.RestartTimeout) * time.Second,
+		},
+		svcMgr.RecoveryAction{
+			Type:  svcMgr.ServiceRestart,
+			Delay: time.Duration(thisRef.serviceSpec.Start.RestartTimeout) * time.Second,
+		},
+		svcMgr.RecoveryAction{
+			Type:  svcMgr.ServiceRestart,
+			Delay: time.Duration(thisRef.serviceSpec.Start.RestartTimeout) * time.Second,
+		},
+	}, 0)
+
 	if err != nil {
 		if winService != nil {
 			winService.Close()
